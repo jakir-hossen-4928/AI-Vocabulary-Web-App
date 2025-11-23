@@ -102,18 +102,17 @@ Target audience: IELTS Band 7+ learners (Bangla speakers).
 
 You must provide:
 1. Bangla Meaning (most common/appropriate meaning)
-2. English Meaning (brief definition)
-3. Part of Speech (e.g., Noun, Verb, Adjective)
-4. Pronunciation (Bangla phonetic)
-5. Explanation (1-2 sentences)
-6. Synonyms (5 words)
-7. Antonyms (5 words)
-8. Examples (2 sentences with Bangla translation)
+2. Part of Speech (e.g., Noun, Verb, Adjective)
+3. Pronunciation (Bangla phonetic)
+4. Explanation (Brief definition in English)
+5. Synonyms (5 words)
+6. Antonyms (5 words)
+7. Examples (2 sentences with Bangla translation)
 
 Format the output EXACTLY as this JSON:
 {
   "bangla": "string",
-  "english": "string",
+  "english": "${word}",
   "partOfSpeech": "string",
   "pronunciation": "string",
   "explanation": "string",

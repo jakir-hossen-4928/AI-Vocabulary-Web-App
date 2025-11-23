@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc, addDoc, updateDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
-import { Vocabulary, Example } from "@/types/vocabulary";
+import { Vocabulary, VocabularyExample } from "@/types/vocabulary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,7 +42,6 @@ export default function AddVocabulary() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [formData, setFormData] = useState<Partial<Vocabulary>>({
-    word: "",
     bangla: "",
     english: "",
     partOfSpeech: "",
@@ -85,18 +84,18 @@ export default function AddVocabulary() {
   };
 
   const handleGenerate = async () => {
-    if (!formData.word) {
+    if (!formData.english) {
       toast.error("Please enter a word first");
       return;
     }
 
     try {
       setGenerating(true);
-      const details = await generateVocabularyFromWord(formData.word);
+      const details = await generateVocabularyFromWord(formData.english);
       setFormData((prev) => ({
         ...prev,
         ...details,
-        word: formData.word, // Keep original word input
+        english: formData.english, // Keep original word input
       }));
       toast.success("Details generated successfully");
     } catch (error) {
@@ -109,7 +108,7 @@ export default function AddVocabulary() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.word || !formData.bangla || !formData.english) {
+    if (!formData.english || !formData.bangla) {
       toast.error("Please fill in the required fields");
       return;
     }
@@ -155,7 +154,7 @@ export default function AddVocabulary() {
     }));
   };
 
-  const updateExample = (index: number, field: keyof Example, value: string) => {
+  const updateExample = (index: number, field: keyof VocabularyExample, value: string) => {
     setFormData((prev) => ({
       ...prev,
       examples: prev.examples?.map((ex, i) =>
@@ -209,12 +208,12 @@ export default function AddVocabulary() {
               {/* Word Input & AI Generation */}
               <div className="flex gap-4 items-end">
                 <div className="flex-1 space-y-2">
-                  <Label htmlFor="word">Word (English)</Label>
+                  <Label htmlFor="english">English</Label>
                   <Input
-                    id="word"
-                    value={formData.word}
+                    id="english"
+                    value={formData.english}
                     onChange={(e) =>
-                      setFormData({ ...formData, word: e.target.value })
+                      setFormData({ ...formData, english: e.target.value })
                     }
                     placeholder="e.g. Serendipity"
                     required
@@ -224,7 +223,7 @@ export default function AddVocabulary() {
                   type="button"
                   variant="secondary"
                   onClick={handleGenerate}
-                  disabled={generating || !formData.word}
+                  disabled={generating || !formData.english}
                   className="mb-[2px]"
                 >
                   {generating ? (
@@ -232,7 +231,7 @@ export default function AddVocabulary() {
                   ) : (
                     <Wand2 className="h-4 w-4 mr-2" />
                   )}
-                  Auto-fill
+                  Chatgpt Auto-fill
                 </Button>
               </div>
 
@@ -249,21 +248,6 @@ export default function AddVocabulary() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="english">English Meaning</Label>
-                  <Input
-                    id="english"
-                    value={formData.english}
-                    onChange={(e) =>
-                      setFormData({ ...formData, english: e.target.value })
-                    }
-                    placeholder="Brief definition"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="partOfSpeech">Part of Speech</Label>
                   <Select
@@ -284,6 +268,9 @@ export default function AddVocabulary() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="pronunciation">Pronunciation</Label>
                   <Input
