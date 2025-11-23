@@ -1,0 +1,82 @@
+import { Volume2, Heart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Vocabulary } from "@/types/vocabulary";
+import { speakText } from "@/services/ttsService";
+import { useState, useEffect } from "react";
+
+interface VocabCardProps {
+  vocab: Vocabulary;
+  onClick?: () => void;
+}
+
+export const VocabCard = ({ vocab, onClick }: VocabCardProps) => {
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+    setIsFavorite(favorites.includes(vocab.id));
+  }, [vocab.id]);
+
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+    const newFavorites = isFavorite
+      ? favorites.filter((id: string) => id !== vocab.id)
+      : [...favorites, vocab.id];
+    localStorage.setItem("favorites", JSON.stringify(newFavorites));
+    setIsFavorite(!isFavorite);
+  };
+
+  const handleSpeak = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    speakText(vocab.english);
+  };
+
+  return (
+    <Card
+      className="p-4 cursor-pointer hover:shadow-hover transition-all duration-300 bg-vocab-card hover:bg-vocab-card-hover"
+      onClick={onClick}
+    >
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-xl font-bold text-foreground">{vocab.bangla}</h3>
+            <Badge variant="secondary" className="text-xs">
+              {vocab.partOfSpeech}
+            </Badge>
+          </div>
+          <p className="text-lg text-primary font-medium">{vocab.english}</p>
+          <p className="text-sm text-muted-foreground mt-1">{vocab.pronunciation}</p>
+        </div>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSpeak}
+            className="h-8 w-8"
+          >
+            <Volume2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFavorite}
+            className="h-8 w-8"
+          >
+            <Heart
+              className={`h-4 w-4 ${isFavorite ? "fill-destructive text-destructive" : ""}`}
+            />
+          </Button>
+        </div>
+      </div>
+      
+      {vocab.explanation && (
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {vocab.explanation}
+        </p>
+      )}
+    </Card>
+  );
+};
