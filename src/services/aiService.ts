@@ -1,5 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 export const generateVocabularyContent = async (
   banglaWord: string,
   englishMeaning: string,
@@ -7,11 +5,8 @@ export const generateVocabularyContent = async (
   apiKey: string
 ) => {
   if (!apiKey) {
-    throw new Error("Google AI Studio API key is required");
+    throw new Error("OpenRouter API key is required");
   }
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `Generate detailed vocabulary information for:
 Bangla word: ${banglaWord}
@@ -37,9 +32,30 @@ Format the response as JSON with this structure:
   "explanation": "Brief explanation of the word"
 }`;
 
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  const text = response.text();
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      "model": "x-ai/grok-4.1-fast:free",
+      "messages": [
+        {
+          "role": "user",
+          "content": prompt
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || `OpenRouter API error: ${response.status}`);
+  }
+
+  const result = await response.json();
+  const text = result.choices[0].message.content;
   
   // Extract JSON from markdown code blocks if present
   const jsonMatch = text.match(/```json\n?([\s\S]*?)\n?```/) || text.match(/\{[\s\S]*\}/);

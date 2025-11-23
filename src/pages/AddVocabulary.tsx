@@ -39,9 +39,9 @@ export default function AddVocabulary() {
       return;
     }
 
-    const apiKey = localStorage.getItem("googleAIKey");
+    const apiKey = localStorage.getItem("openrouterAPIKey");
     if (!apiKey) {
-      toast.error("Please add your Google AI Studio API key in Profile settings");
+      toast.error("Please add your OpenRouter API key in Profile settings");
       navigate("/profile");
       return;
     }
