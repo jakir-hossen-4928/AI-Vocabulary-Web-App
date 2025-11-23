@@ -65,9 +65,17 @@ export default function Profile() {
         {/* User Info */}
         <Card className="p-6 shadow-hover mb-4">
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-              <User className="h-8 w-8 text-primary" />
-            </div>
+            {user?.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt="Profile" 
+                className="w-16 h-16 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <User className="h-8 w-8 text-primary" />
+              </div>
+            )}
             <div className="flex-1">
               <h2 className="font-semibold text-foreground mb-1">
                 {user?.displayName || "User"}

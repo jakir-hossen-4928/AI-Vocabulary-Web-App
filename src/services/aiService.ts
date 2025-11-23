@@ -11,7 +11,7 @@ export const generateVocabularyContent = async (
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `Generate detailed vocabulary information for:
 Bangla word: ${banglaWord}
