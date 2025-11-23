@@ -3,16 +3,20 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCqWUN3QyceYrvqHXdbLdAYzIcrg8efXO8",
-  authDomain: "ielts-jakir.firebaseapp.com",
-  projectId: "ielts-jakir",
-  storageBucket: "ielts-jakir.firebasestorage.app",
-  messagingSenderId: "412154848714",
-  appId: "1:412154848714:web:3a8ada743d1c2b00675b33",
-  measurementId: "G-C6MDJ0NBJZ"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
+
+import { getMessaging } from "firebase/messaging";
+export const messaging = getMessaging(app);

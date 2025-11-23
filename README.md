@@ -44,7 +44,7 @@ A modern, AI-powered vocabulary learning application designed to help Bengali sp
 - **Backend**: Firebase (Authentication, Firestore, Storage)
 - **AI Integration**: OpenAI API (GPT-4o)
 - **State Management**: TanStack Query (React Query)
-- **PDF Generation**: jsPDF
+- **PDF Generation**: html2pdf.js
 
 ## 🏁 Getting Started
 

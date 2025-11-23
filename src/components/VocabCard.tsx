@@ -6,12 +6,15 @@ import { Vocabulary } from "@/types/vocabulary";
 import { speakText } from "@/services/ttsService";
 import { useState, useEffect } from "react";
 
+import { motion } from "framer-motion";
+
 interface VocabCardProps {
   vocab: Vocabulary;
   onClick?: () => void;
+  index?: number;
 }
 
-export const VocabCard = ({ vocab, onClick }: VocabCardProps) => {
+export const VocabCard = ({ vocab, onClick, index = 0 }: VocabCardProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
@@ -35,48 +38,56 @@ export const VocabCard = ({ vocab, onClick }: VocabCardProps) => {
   };
 
   return (
-    <Card
-      className="p-4 cursor-pointer hover:shadow-hover transition-all duration-300 bg-vocab-card hover:bg-vocab-card-hover"
-      onClick={onClick}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
     >
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-xl font-bold text-foreground">{vocab.bangla}</h3>
-            <Badge variant="secondary" className="text-xs">
-              {vocab.partOfSpeech}
-            </Badge>
+      <Card
+        className="p-4 cursor-pointer hover:shadow-hover transition-all duration-300 bg-vocab-card hover:bg-vocab-card-hover"
+        onClick={onClick}
+      >
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-xl font-bold text-foreground">{vocab.bangla}</h3>
+              <Badge variant="secondary" className="text-xs">
+                {vocab.partOfSpeech}
+              </Badge>
+            </div>
+            <p className="text-lg text-primary font-medium">{vocab.english}</p>
+            <p className="text-sm text-muted-foreground mt-1">{vocab.pronunciation}</p>
           </div>
-          <p className="text-lg text-primary font-medium">{vocab.english}</p>
-          <p className="text-sm text-muted-foreground mt-1">{vocab.pronunciation}</p>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSpeak}
+              className="h-8 w-8"
+            >
+              <Volume2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleFavorite}
+              className="h-8 w-8"
+            >
+              <Heart
+                className={`h-4 w-4 ${isFavorite ? "fill-destructive text-destructive" : ""}`}
+              />
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSpeak}
-            className="h-8 w-8"
-          >
-            <Volume2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleFavorite}
-            className="h-8 w-8"
-          >
-            <Heart
-              className={`h-4 w-4 ${isFavorite ? "fill-destructive text-destructive" : ""}`}
-            />
-          </Button>
-        </div>
-      </div>
-      
-      {vocab.explanation && (
-        <p className="text-sm text-muted-foreground line-clamp-2">
-          {vocab.explanation}
-        </p>
-      )}
-    </Card>
+
+        {vocab.explanation && (
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {vocab.explanation}
+          </p>
+        )}
+      </Card>
+    </motion.div>
   );
 };
