@@ -22,13 +22,13 @@ export default function Profile() {
       navigate("/auth");
     }
     // Load API key from localStorage
-    const savedKey = localStorage.getItem("googleAIKey");
+    const savedKey = localStorage.getItem("openrouterAPIKey");
     if (savedKey) setApiKey(savedKey);
   }, [user, loading, navigate]);
 
   const handleSaveApiKey = () => {
     if (apiKey.trim()) {
-      localStorage.setItem("googleAIKey", apiKey.trim());
+      localStorage.setItem("openrouterAPIKey", apiKey.trim());
       toast.success("API key saved successfully!");
     } else {
       toast.error("Please enter a valid API key");
@@ -95,18 +95,18 @@ export default function Profile() {
         <Card className="p-6 shadow-card mb-4">
           <div className="flex items-center gap-2 mb-4">
             <Key className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Google AI Studio API Key</h3>
+            <h3 className="font-semibold text-foreground">OpenRouter API Key</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
             Your API key is stored locally and used to generate vocabulary content.
             Get your key from{" "}
             <a
-              href="https://makersuite.google.com/app/apikey"
+              href="https://openrouter.ai/settings/keys"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              Google AI Studio
+              OpenRouter
             </a>
           </p>
           <div className="space-y-2">
@@ -114,7 +114,7 @@ export default function Profile() {
             <Input
               id="apiKey"
               type="password"
-              placeholder="Enter your Google AI Studio API key"
+              placeholder="Enter your OpenRouter API key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
