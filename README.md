@@ -1,73 +1,99 @@
-# Welcome to your Lovable project
+# AI Vocabulary Coach 📚
 
-## Project info
+A modern, AI-powered vocabulary learning application designed to help Bengali speakers master English vocabulary, specifically tailored for IELTS Band 7+ preparation.
 
-**URL**: https://lovable.dev/projects/a920e6a1-d34a-49e3-be98-59a545b9539b
+## 🚀 Features
 
-## How can I edit this code?
+### 🤖 AI-Powered Content Generation
+- **One-Click Auto-fill**: Enter an English word, and our AI (powered by GPT-4o) automatically generates:
+  - Bangla Meaning
+  - English Definition
+  - Part of Speech
+  - Bangla Phonetic Pronunciation
+  - Detailed Explanation
+  - Synonyms & Antonyms (Band 7+ level)
+  - Example Sentences (English with Bangla translation)
 
-There are several ways of editing your application.
+### 📖 Vocabulary Management
+- **Interactive Cards**: Beautifully designed vocabulary cards with flip/expand interactions.
+- **Smart Search & Filtering**: Filter words by Part of Speech, Favorites, or search by text.
+- **Audio Pronunciation**: Built-in Text-to-Speech to hear the correct pronunciation.
+- **Favorites & PDF Export**: Save difficult words and export your favorites list to PDF for offline study.
 
-**Use Lovable**
+### 🖼️ Grammar Gallery
+- **Visual Learning**: Access a curated gallery of grammar rules and cheat sheets.
+- **Admin Management**: Admins can easily upload and manage grammar reference images.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a920e6a1-d34a-49e3-be98-59a545b9539b) and start prompting.
+### 🔐 User System
+- **Google Authentication**: Secure and fast sign-in using Google.
+- **Role-Based Access**:
+  - **Admins**: Full control to add/edit vocabulary, manage users, and upload grammar content.
+  - **Users**: Browse, search, favorite words, and view grammar resources.
+  - **Guest Mode**: Explore the app with limited features without signing in.
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🎨 Modern UI/UX
+- **Responsive Design**: Fully optimized for mobile, tablet, and desktop.
+- **Smooth Animations**: Powered by Framer Motion for a premium feel.
+- **PWA Support**: Installable as a native-like app on your device.
 
-**Use your preferred IDE**
+## 🛠️ Tech Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Frontend**: React, TypeScript, Vite
+- **Styling**: Tailwind CSS, Shadcn UI
+- **Animations**: Framer Motion
+- **Backend**: Firebase (Authentication, Firestore, Storage)
+- **AI Integration**: OpenAI API (GPT-4o)
+- **State Management**: TanStack Query (React Query)
+- **PDF Generation**: jsPDF
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🏁 Getting Started
 
-Follow these steps:
+Follow these steps to set up the project locally.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+- A Firebase project
+- An OpenAI API Key
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Installation
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/jakir-hossen-4928/AI-Vocabulary-Web-App.git
+   cd AI-Vocabulary-Web-App
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-**Edit a file directly in GitHub**
+3. **Set up Environment Variables**
+   Create a `.env` file in the root directory and add your credentials:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+   ```env
+   # Firebase Configuration
+   VITE_FIREBASE_API_KEY=your_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
 
-**Use GitHub Codespaces**
+   # OpenAI Configuration
+   VITE_OPENAI_API_KEY=your_openai_api_key
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
 
-## What technologies are used for this project?
+## 🤝 Contributing
 
-This project is built with:
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📄 License
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/a920e6a1-d34a-49e3-be98-59a545b9539b) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project is licensed under the MIT License.
