@@ -27,9 +27,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(user);
       
       if (user) {
-        // Check if user has admin role
         const roleDoc = await getDoc(doc(db, 'user_roles', user.uid));
-        setIsAdmin(roleDoc.exists() && roleDoc.data()?.role === 'admin');
+        
+        if (!roleDoc.exists()) {
+          // Create user role for new users
+          const { setDoc } = await import('firebase/firestore');
+          await setDoc(doc(db, 'user_roles', user.uid), { role: 'user' });
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(roleDoc.data()?.role === 'admin');
+        }
       } else {
         setIsAdmin(false);
       }
