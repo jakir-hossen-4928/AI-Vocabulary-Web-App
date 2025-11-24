@@ -8,25 +8,32 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVocabularies } from "@/hooks/useVocabularies";
 import { VocabCard } from "@/components/VocabCard";
 import { motion } from "framer-motion";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: vocabularies = [], isLoading } = useVocabularies();
+  const debouncedSearch = useDebounce(searchQuery, 500);
+
+  // Use the hook with search query
+  // Note: The hook now returns Vocabulary[] directly, not pages
+  const { data, isLoading } = useVocabularies();
+
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
 
-  const filteredVocabs = searchQuery.trim()
-    ? vocabularies.filter(v =>
-      v.bangla.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.english.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.partOfSpeech.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    : [];
+  const vocabularies = data || [];
 
-  // Calculate some basic stats
-  const totalWords = vocabularies.length;
-  // Placeholder for mastered count until implemented
-  const masteredCount = 0;
+  // Filter locally if needed (though the hook handles fetching based on search)
+  // Since we are using infinite query, 'vocabularies' contains the fetched chunks.
+  // If search is active, the hook fetches filtered results (or all if we didn't implement server-side search fully yet)
+  // We'll add a client-side filter as a fallback for the "smooth search" requirement
+  const filteredVocabs = debouncedSearch.trim()
+    ? vocabularies.filter(v =>
+      v.bangla.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      v.english.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      v.partOfSpeech.toLowerCase().includes(debouncedSearch.toLowerCase())
+    )
+    : vocabularies; // Show recent words if no search
 
   return (
     <div className="min-h-screen bg-background pb-24">

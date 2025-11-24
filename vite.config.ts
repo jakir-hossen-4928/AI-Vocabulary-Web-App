@@ -62,8 +62,21 @@ export default defineConfig(({ mode }) => ({
                 statuses: [0, 200]
               },
             }
-          }
-        ]
+          },
+          // Cache images from storage or external sources
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+              },
+            },
+          },
+        ],
+        navigateFallback: '/index.html',
       }
     })
   ].filter(Boolean),

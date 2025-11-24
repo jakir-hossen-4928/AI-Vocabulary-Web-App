@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 
 export default function VocabularyDetail() {
   const { id } = useParams();
-  const { data: vocabularies = [] } = useVocabularies();
+  const { data } = useVocabularies();
   const { deleteVocabulary } = useVocabularyMutations();
   const [vocab, setVocab] = useState<Vocabulary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,9 +23,14 @@ export default function VocabularyDetail() {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  // Data is now a flat array from useVocabularies
+  const vocabularies = data || [];
+
   useEffect(() => {
     const loadVocabulary = async () => {
       if (!id) return;
+
+      setLoading(true);
 
       // Try to find in cache first
       const cachedVocab = vocabularies.find(v => v.id === id);
@@ -37,7 +42,6 @@ export default function VocabularyDetail() {
 
       // Fallback to fetch if not in cache
       try {
-        setLoading(true);
         const docRef = doc(db, "vocabularies", id);
         const docSnap = await getDoc(docRef);
 

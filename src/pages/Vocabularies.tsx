@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VocabCard } from "@/components/VocabCard";
 import { Plus, Search, Loader2, Filter, X } from "lucide-react";
-import { useVocabularies } from "@/hooks/useVocabularies";
+import { useVocabularies, useVocabularyMutations } from "@/hooks/useVocabularies";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import {
   Sheet,
@@ -32,6 +32,7 @@ import { motion } from "framer-motion";
 export default function Vocabularies() {
   const [searchParams] = useSearchParams();
   const { data: vocabularies = [], isLoading } = useVocabularies();
+  const { deleteVocabulary } = useVocabularyMutations();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -115,6 +116,14 @@ export default function Vocabularies() {
     setSortOrder("newest");
     setShowFavorites(false);
     setSearchQuery("");
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteVocabulary.mutateAsync(id);
+    } catch (error) {
+      console.error("Failed to delete vocabulary:", error);
+    }
   };
 
   return (
@@ -312,6 +321,8 @@ export default function Vocabularies() {
                 vocab={vocab}
                 index={index}
                 onClick={() => navigate(`/vocabularies/${vocab.id}`)}
+                onDelete={handleDelete}
+                isAdmin={isAdmin}
               />
             ))}
           </div>
