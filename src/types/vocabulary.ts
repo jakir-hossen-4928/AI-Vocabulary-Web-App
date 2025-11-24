@@ -18,12 +18,17 @@ export interface Vocabulary {
   userId: string;
 }
 
-export type PartOfSpeech = 
-  | "noun" 
-  | "verb" 
-  | "adjective" 
-  | "adverb" 
-  | "pronoun" 
-  | "preposition" 
-  | "conjunction" 
-  | "interjection";
+export type PartOfSpeech =
+  | "noun"
+  | "verb"
+  | "adjective"
+  | "adverb"
+  | "pronoun"
+  | "preposition"
+  | "conjunction"
+  | "interjection"
+  | "phrase"
+  | "idiom"
+  | "phrasal verb"
+  | "collocation"
+  | "linking phrase";

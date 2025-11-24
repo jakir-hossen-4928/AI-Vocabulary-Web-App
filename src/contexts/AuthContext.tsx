@@ -27,32 +27,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(user);
 
       if (user) {
-        const { setDoc, serverTimestamp } = await import('firebase/firestore');
-        const userRef = doc(db, 'user_roles', user.uid);
-        const roleDoc = await getDoc(userRef);
+        try {
+          const { setDoc, serverTimestamp } = await import('firebase/firestore');
+          const userRef = doc(db, 'user_roles', user.uid);
 
-        // Data to update or set
-        const userData = {
-          email: user.email,
-          photoURL: user.photoURL,
-          displayName: user.displayName,
-          lastLogin: serverTimestamp(),
-        };
+          console.log('Checking user_roles for:', user.uid);
+          const roleDoc = await getDoc(userRef);
 
-        if (!roleDoc.exists()) {
-          // Create new user document
-          await setDoc(userRef, {
-            ...userData,
-            role: 'user',
-            createdAt: serverTimestamp()
-          });
+          // Data to update or set
+          const userData = {
+            email: user.email,
+            photoURL: user.photoURL,
+            displayName: user.displayName,
+            lastLogin: serverTimestamp(),
+          };
+
+          if (!roleDoc.exists()) {
+            // Create new user document
+            console.log('Creating new user in user_roles:', user.uid);
+            await setDoc(userRef, {
+              ...userData,
+              role: 'user',
+              createdAt: serverTimestamp()
+            });
+            console.log('User created successfully in user_roles');
+            setIsAdmin(false);
+          } else {
+            // Update existing user document with latest auth profile
+            console.log('Updating existing user in user_roles:', user.uid);
+            await setDoc(userRef, userData, { merge: true });
+            console.log('User updated successfully in user_roles');
+            setIsAdmin(roleDoc.data()?.role === 'admin');
+          }
+        } catch (error) {
+          console.error('Error managing user_roles:', error);
+          // Still set isAdmin to false on error
           setIsAdmin(false);
-        } else {
-          // Update existing user document with latest auth profile
-          // Only update if data changed to reduce writes?
-          // For now, updating on login is acceptable frequency.
-          await setDoc(userRef, userData, { merge: true });
-          setIsAdmin(roleDoc.data()?.role === 'admin');
         }
       } else {
         setIsAdmin(false);

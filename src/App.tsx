@@ -10,9 +10,10 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import Vocabularies from "./pages/Vocabularies";
 import AddVocabulary from "./pages/AddVocabulary";
+import BulkAddVocabulary from "./pages/BulkAddVocabulary";
 import VocabularyDetail from "./pages/VocabularyDetail";
-import Grammar from "./pages/Grammar";
-import AdminGrammar from "./pages/AdminGrammar";
+import ResourceDetail from "./pages/ResourceDetail";
+import ResourcesGallery from "./pages/ResourcesGallery";
 import AdminUsers from "./pages/AdminUsers";
 import Favorites from "./pages/Favorites";
 import NotFound from "./pages/NotFound";
@@ -35,21 +36,47 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 
 
+import { Layout } from "@/components/Layout";
+
+import IELTSDashboard from "./pages/ielts/IELTSDashboard";
+import Speaking from "./pages/ielts/Speaking";
+import Reading from "./pages/ielts/Reading";
+import Writing from "./pages/ielts/Writing";
+import Listening from "./pages/ielts/Listening";
+
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/vocabularies" element={<ProtectedRoute><Vocabularies /></ProtectedRoute>} />
-      <Route path="/vocabularies/add" element={<AdminRoute><AddVocabulary /></AdminRoute>} />
-      <Route path="/vocabularies/edit/:id" element={<AdminRoute><AddVocabulary /></AdminRoute>} />
-      <Route path="/vocabularies/:id" element={<ProtectedRoute><VocabularyDetail /></ProtectedRoute>} />
-      <Route path="/grammar" element={<ProtectedRoute><Grammar /></ProtectedRoute>} />
-      <Route path="/admin/grammar" element={<AdminRoute><AdminGrammar /></AdminRoute>} />
-      <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-      <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/vocabularies" element={<ProtectedRoute><Vocabularies /></ProtectedRoute>} />
+        <Route path="/vocabularies/add" element={<AdminRoute><AddVocabulary /></AdminRoute>} />
+        <Route path="/vocabularies/bulk-add" element={<AdminRoute><BulkAddVocabulary /></AdminRoute>} />
+        <Route path="/vocabularies/edit/:id" element={<AdminRoute><AddVocabulary /></AdminRoute>} />
+        <Route path="/vocabularies/:id" element={<ProtectedRoute><VocabularyDetail /></ProtectedRoute>} />
+        <Route path="/resources" element={<ProtectedRoute><ResourcesGallery /></ProtectedRoute>} />
+        <Route path="/resources/:id" element={<ProtectedRoute><ResourceDetail /></ProtectedRoute>} />
+
+        {/* Redirects from old grammar routes to new resources routes */}
+        <Route path="/grammar" element={<Navigate to="/resources" replace />} />
+        <Route path="/grammar/:id" element={<Navigate to="/resources/:id" replace />} />
+
+        {/* IELTS Routes */}
+        <Route path="/ielts" element={<ProtectedRoute><IELTSDashboard /></ProtectedRoute>} />
+        <Route path="/ielts/speaking" element={<ProtectedRoute><Speaking /></ProtectedRoute>} />
+        <Route path="/ielts/reading" element={<ProtectedRoute><Reading /></ProtectedRoute>} />
+        <Route path="/ielts/writing" element={<ProtectedRoute><Writing /></ProtectedRoute>} />
+        <Route path="/ielts/listening" element={<ProtectedRoute><Listening /></ProtectedRoute>} />
+
+        {/* Redirect old admin routes to resources gallery */}
+        <Route path="/admin/resources" element={<Navigate to="/resources" replace />} />
+        <Route path="/admin/grammar" element={<Navigate to="/resources" replace />} />
+        <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+        <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
     </Routes>
   );
 };

@@ -4,14 +4,14 @@ import { NavLink } from "@/components/NavLink";
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/vocabularies", icon: BookOpen, label: "Words" },
-  { path: "/grammar", icon: GraduationCap, label: "Grammar" },
+  { path: "/resources", icon: GraduationCap, label: "Resources" },
   { path: "/favorites", icon: Heart, label: "Favorites" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
 export const BottomNav = () => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 safe-bottom md:hidden">
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
         {navItems.map((item) => (
           <NavLink

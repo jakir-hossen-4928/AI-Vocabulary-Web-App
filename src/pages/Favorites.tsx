@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { BottomNav } from "@/components/BottomNav";
 import { VocabCard } from "@/components/VocabCard";
 import { Heart, Loader2, Download } from "lucide-react";
 import { useVocabularies } from "@/hooks/useVocabularies";
@@ -114,7 +113,7 @@ export default function Favorites() {
         )}
       </div>
 
-      <BottomNav />
+
     </div>
   );
 }

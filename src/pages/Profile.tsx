@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BottomNav } from "@/components/BottomNav";
 import { User, LogOut, Shield, BookOpen, TrendingUp, GraduationCap, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
@@ -119,14 +118,6 @@ export default function Profile() {
             transition={{ delay: 0.3 }}
           >
             <Button
-              onClick={() => navigate("/admin/grammar")}
-              variant="outline"
-              className="w-full mb-3 border-primary/20 "
-            >
-              <GraduationCap className="mr-2 h-4 w-4 text-primary" />
-              Manage Grammar Gallery
-            </Button>
-            <Button
               onClick={() => navigate("/admin/users")}
               variant="outline"
               className="w-full mb-6 border-primary/20 "
@@ -172,7 +163,6 @@ export default function Profile() {
         )}
       </div>
 
-      <BottomNav />
     </div >
   );
 }

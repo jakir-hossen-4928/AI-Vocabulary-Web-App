@@ -4,7 +4,6 @@ import { Search, Plus, Sparkles, Zap, Brain, Loader2, BookOpen, Trophy } from "l
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVocabularies } from "@/hooks/useVocabularies";
 import { VocabCard } from "@/components/VocabCard";
@@ -212,7 +211,6 @@ export default function Home() {
         )}
       </div>
 
-      <BottomNav />
     </div>
   );
 }

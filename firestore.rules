@@ -16,7 +16,15 @@ service cloud.firestore {
     // User Roles collection
     match /user_roles/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin(); // Only admins can change roles
+      // Allow users to create their own document on first login
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // Allow users to update their own profile info (but not role)
+      allow update: if isAuthenticated() && request.auth.uid == userId &&
+                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
+      // Allow admins to update any user (including role changes)
+      allow update: if isAdmin();
+      // Only admins can delete users
+      allow delete: if isAdmin();
     }
 
     // Vocabularies collection

@@ -31,6 +31,11 @@ const PARTS_OF_SPEECH = [
   "Preposition",
   "Conjunction",
   "Interjection",
+  "Phrase",
+  "Idiom",
+  "Phrasal Verb",
+  "Collocation",
+  "Linking Phrase",
 ];
 
 export default function AddVocabulary() {

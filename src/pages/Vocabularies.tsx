@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BottomNav } from "@/components/BottomNav";
 import { VocabCard } from "@/components/VocabCard";
 import { Plus, Search, Loader2, Filter, X } from "lucide-react";
 import { useVocabularies } from "@/hooks/useVocabularies";
@@ -136,13 +135,24 @@ export default function Vocabularies() {
               </p>
             </div>
             {isAdmin && (
-              <Button
-                onClick={() => navigate("/vocabularies/add")}
-                size="icon"
-                className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-sm"
-              >
-                <Plus className="h-5 w-5" />
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => navigate("/vocabularies/add")}
+                  size="sm"
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-sm"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+                <Button
+                  onClick={() => navigate("/vocabularies/bulk-add")}
+                  size="sm"
+                  variant="secondary"
+                  className="bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 shadow-sm"
+                >
+                  Bulk Upload
+                </Button>
+              </div>
             )}
           </div>
 
@@ -217,6 +227,11 @@ export default function Vocabularies() {
                         <SelectItem value="conjunction">Conjunction</SelectItem>
                         <SelectItem value="pronoun">Pronoun</SelectItem>
                         <SelectItem value="interjection">Interjection</SelectItem>
+                        <SelectItem value="phrase">Phrase</SelectItem>
+                        <SelectItem value="idiom">Idiom</SelectItem>
+                        <SelectItem value="phrasal verb">Phrasal Verb</SelectItem>
+                        <SelectItem value="collocation">Collocation</SelectItem>
+                        <SelectItem value="linking phrase">Linking Phrase</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -303,7 +318,7 @@ export default function Vocabularies() {
         )}
       </div>
 
-      <BottomNav />
+
     </div>
   );
 }
