@@ -15,8 +15,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'AI Vocabulary Coach',
-        short_name: 'VocabCoach',
+        name: 'Ai Vocab',
+        short_name: 'Ai Vocab',
         description: 'Learn new words with AI',
         theme_color: '#ffffff',
         icons: [
