@@ -33,7 +33,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { Vocabulary } from "@/types/vocabulary";
 
 export default function Vocabularies() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: vocabularies = [], isLoading } = useVocabularies();
   const { deleteVocabulary } = useVocabularyMutations();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
@@ -41,9 +41,9 @@ export default function Vocabularies() {
   const navigate = useNavigate();
 
   // Advanced Filters State
-  const [selectedPos, setSelectedPos] = useState<string>("all");
-  const [sortOrder, setSortOrder] = useState<string>("newest");
-  const [showFavorites, setShowFavorites] = useState<boolean>(false);
+  const [selectedPos, setSelectedPos] = useState<string>(searchParams.get("pos") || "all");
+  const [sortOrder, setSortOrder] = useState<string>(searchParams.get("sort") || "newest");
+  const [showFavorites, setShowFavorites] = useState<boolean>(searchParams.get("fav") === "true");
   const [favorites, setFavorites] = useState<string[]>([]);
 
   // Worker State
@@ -137,6 +137,25 @@ export default function Vocabularies() {
       });
     }
   }, [vocabularies, debouncedSearch, selectedPos, sortOrder, showFavorites, favorites]);
+
+  // Sync filters with URL
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    else params.delete("search");
+
+    if (selectedPos !== "all") params.set("pos", selectedPos);
+    else params.delete("pos");
+
+    if (sortOrder !== "newest") params.set("sort", sortOrder);
+    else params.delete("sort");
+
+    if (showFavorites) params.set("fav", "true");
+    else params.delete("fav");
+
+    setSearchParams(params, { replace: true });
+  }, [debouncedSearch, selectedPos, sortOrder, showFavorites, setSearchParams]);
 
   const activeFiltersCount = (selectedPos !== "all" ? 1 : 0) + (showFavorites ? 1 : 0) + (sortOrder !== "newest" ? 1 : 0);
 

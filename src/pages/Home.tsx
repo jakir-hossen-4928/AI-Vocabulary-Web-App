@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Sparkles, Zap, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,31 @@ export default function Home() {
   const { data, isLoading } = useVocabularies();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [favorites, setFavorites] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadFavorites = () => {
+      const saved = localStorage.getItem("favorites");
+      if (saved) {
+        setFavorites(JSON.parse(saved));
+      }
+    };
+    loadFavorites();
+    window.addEventListener('storage', loadFavorites);
+    return () => window.removeEventListener('storage', loadFavorites);
+  }, []);
+
+  const toggleFavorite = useCallback((id: string) => {
+    setFavorites(prev => {
+      const newFavorites = prev.includes(id)
+        ? prev.filter(favId => favId !== id)
+        : [...prev, id];
+
+      localStorage.setItem("favorites", JSON.stringify(newFavorites));
+      window.dispatchEvent(new Event('storage'));
+      return newFavorites;
+    });
+  }, []);
 
   const vocabularies = data || [];
 
@@ -192,6 +217,8 @@ export default function Home() {
                         <VocabCard
                           vocab={vocab}
                           index={index}
+                          isFavorite={favorites.includes(vocab.id)}
+                          onToggleFavorite={toggleFavorite}
                           onClick={() => navigate(`/vocabularies/${vocab.id}`)}
                         />
                       </motion.div>

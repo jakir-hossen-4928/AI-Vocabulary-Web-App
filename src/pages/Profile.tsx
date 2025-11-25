@@ -7,19 +7,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut, Shield, BookOpen, TrendingUp, GraduationCap, Download, FileDown } from "lucide-react";
+import { User, LogOut, Shield, Download, BookOpen, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { motion } from "framer-motion";
-import { generateVocabulariesPDF } from "@/lib/pdf/allvocabularies";
-import { dbService } from "@/lib/db";
 
 export default function Profile() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [totalWords, setTotalWords] = useState(0);
-  const [masteredWords, setMasteredWords] = useState(0);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   const { isInstallable, installApp } = useInstallPrompt();
 
   useEffect(() => {
@@ -32,13 +29,16 @@ export default function Profile() {
     const fetchStats = async () => {
       if (!user) return;
       try {
-        const coll = collection(db, "vocabularies");
-        const q = query(coll, where("userId", "==", user.uid));
-        const snapshot = await getCountFromServer(q);
-        setTotalWords(snapshot.data().count);
+        // Get total vocabularies count
+        const vocabColl = collection(db, "vocabularies");
+        const vocabQuery = query(vocabColl, where("userId", "==", user.uid));
+        const vocabSnapshot = await getCountFromServer(vocabQuery);
+        setTotalWords(vocabSnapshot.data().count);
 
-        // Placeholder for mastered words until logic is implemented
-        setMasteredWords(0);
+        // Get favorites count
+        const savedFavorites = localStorage.getItem("favorites");
+        const favoritesCount = savedFavorites ? JSON.parse(savedFavorites).length : 0;
+        setFavoritesCount(favoritesCount);
       } catch (error) {
         console.error("Error fetching stats:", error);
       }
@@ -54,34 +54,6 @@ export default function Profile() {
       navigate("/auth");
     } catch (error: any) {
       toast.error(error.message || "Failed to sign out");
-    }
-  };
-
-  const handleDownloadPDF = async () => {
-    if (!user) return;
-
-    setIsDownloading(true);
-    try {
-      // Fetch vocabularies from local IndexedDB to save Firestore reads
-      const vocabularies = await dbService.getAllVocabularies();
-
-      if (vocabularies.length === 0) {
-        toast.error("No vocabularies found to download. Please visit the Vocabularies page to sync your data first.");
-        return;
-      }
-
-      await generateVocabulariesPDF({
-        vocabularies,
-        userName: user.displayName || "User",
-        userEmail: user.email || "",
-      });
-
-      toast.success("PDF downloaded successfully!");
-    } catch (error) {
-      console.error("Error downloading PDF:", error);
-      toast.error("Failed to generate PDF. Please try again.");
-    } finally {
-      setIsDownloading(false);
     }
   };
 
@@ -142,24 +114,38 @@ export default function Profile() {
           </Card>
         </motion.div>
 
-        {/* Actions */}
+        {/* Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="space-y-3 mb-6"
+          className="grid grid-cols-2 gap-3 mb-6"
         >
-          <Button
-            onClick={handleDownloadPDF}
-            variant="outline"
-            className="w-full border-primary/20"
-            disabled={isDownloading}
-          >
-            <FileDown className="mr-2 h-4 w-4 text-primary" />
-            {isDownloading ? "Generating PDF..." : "Download Vocabularies (PDF)"}
-          </Button>
+          <Card className="p-4 shadow-hover">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <BookOpen className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Words</p>
+                <p className="text-xl font-bold text-foreground">{totalWords}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 shadow-hover">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-accent" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Favorites</p>
+                <p className="text-xl font-bold text-foreground">{favoritesCount}</p>
+              </div>
+            </div>
+          </Card>
         </motion.div>
 
+        {/* Admin Actions */}
         {isAdmin && (
           <motion.div
             initial={{ opacity: 0, x: -20 }}

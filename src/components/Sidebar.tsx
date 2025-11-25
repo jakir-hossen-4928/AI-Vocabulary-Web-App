@@ -1,5 +1,6 @@
-import { Home, BookOpen, GraduationCap, User, Heart, Globe } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Heart, Globe, Shield, Users } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
     { path: "/", icon: Home, label: "Home" },
@@ -11,6 +12,8 @@ const navItems = [
 ];
 
 export const Sidebar = () => {
+    const { isAdmin } = useAuth();
+
     return (
         <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 border-r bg-card z-50">
             <div className="p-6">
@@ -18,7 +21,7 @@ export const Sidebar = () => {
                     Ai Vocab
                 </h1>
             </div>
-            <nav className="flex-1 px-4 space-y-2">
+            <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
                 {navItems.map((item) => (
                     <NavLink
                         key={item.path}
@@ -30,6 +33,32 @@ export const Sidebar = () => {
                         <span>{item.label}</span>
                     </NavLink>
                 ))}
+
+                {isAdmin && (
+                    <>
+                        <div className="pt-4 pb-2 px-4">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                Admin
+                            </p>
+                        </div>
+                        <NavLink
+                            to="/admin/users"
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                            activeClassName="bg-primary/10 text-primary font-medium"
+                        >
+                            <Users className="h-5 w-5" />
+                            <span>Manage Users</span>
+                        </NavLink>
+                        <NavLink
+                            to="/admin/duplicates"
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                            activeClassName="bg-primary/10 text-primary font-medium"
+                        >
+                            <Shield className="h-5 w-5" />
+                            <span>Duplicate Manager</span>
+                        </NavLink>
+                    </>
+                )}
             </nav>
         </aside>
     );

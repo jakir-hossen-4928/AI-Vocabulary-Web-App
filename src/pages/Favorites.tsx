@@ -25,7 +25,23 @@ export default function Favorites() {
     setFavorites(savedFavorites);
   }, [user, navigate]);
 
-  const favoriteVocabs = vocabularies.filter(v => favorites.includes(v.id));
+  const favoriteVocabs = vocabularies
+    .filter(v => favorites.includes(v.id))
+    .sort((a, b) => {
+      return favorites.indexOf(b.id) - favorites.indexOf(a.id);
+    });
+
+  const toggleFavorite = (id: string) => {
+    setFavorites(prev => {
+      const newFavorites = prev.includes(id)
+        ? prev.filter(favId => favId !== id)
+        : [...prev, id];
+
+      localStorage.setItem("favorites", JSON.stringify(newFavorites));
+      window.dispatchEvent(new Event('storage'));
+      return newFavorites;
+    });
+  };
 
   const handleExport = async () => {
     if (favoriteVocabs.length === 0) {
@@ -106,6 +122,8 @@ export default function Favorites() {
                 key={vocab.id}
                 vocab={vocab}
                 index={index}
+                isFavorite={true}
+                onToggleFavorite={toggleFavorite}
                 onClick={() => navigate(`/vocabularies/${vocab.id}`)}
               />
             ))}
