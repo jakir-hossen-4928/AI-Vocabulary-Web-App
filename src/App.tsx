@@ -37,6 +37,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 
 import { Layout } from "@/components/Layout";
+import { LandingLayout } from "@/components/LandingLayout";
+import LandingPage from "./pages/LandingPage";
 
 import IELTSDashboard from "./pages/ielts/IELTSDashboard";
 import Speaking from "./pages/ielts/Speaking";
@@ -45,11 +47,21 @@ import Writing from "./pages/ielts/Writing";
 import Listening from "./pages/ielts/Listening";
 
 const AppRoutes = () => {
+  const { user, loading } = useAuth();
+
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
+      {/* Landing Page - No Sidebar/BottomNav (for non-authenticated users) */}
+      <Route element={<LandingLayout />}>
+        {/* Show LandingPage only if not authenticated */}
+        <Route path="/" element={!loading && !user ? <LandingPage /> : <Navigate to="/home" replace />} />
         <Route path="/auth" element={<Auth />} />
+      </Route>
+
+      {/* App Pages - With Sidebar/BottomNav (for authenticated users) */}
+      <Route element={<Layout />}>
+        {/* Home dashboard with navigation bars */}
+        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/vocabularies" element={<ProtectedRoute><Vocabularies /></ProtectedRoute>} />
         <Route path="/vocabularies/add" element={<AdminRoute><AddVocabulary /></AdminRoute>} />

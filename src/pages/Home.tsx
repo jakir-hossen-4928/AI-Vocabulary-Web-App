@@ -1,223 +1,255 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Sparkles, Zap, Brain, Loader2, BookOpen, Trophy } from "lucide-react";
+import { Search, Sparkles, Zap, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVocabularies } from "@/hooks/useVocabularies";
 import { VocabCard } from "@/components/VocabCard";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 500);
-
-  // Use the hook with search query
-  // Note: The hook now returns Vocabulary[] directly, not pages
   const { data, isLoading } = useVocabularies();
-
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
   const vocabularies = data || [];
 
-  // Filter locally if needed (though the hook handles fetching based on search)
-  // Since we are using infinite query, 'vocabularies' contains the fetched chunks.
-  // If search is active, the hook fetches filtered results (or all if we didn't implement server-side search fully yet)
-  // We'll add a client-side filter as a fallback for the "smooth search" requirement
   const filteredVocabs = debouncedSearch.trim()
     ? vocabularies.filter(v =>
       v.bangla.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       v.english.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       v.partOfSpeech.toLowerCase().includes(debouncedSearch.toLowerCase())
     )
-    : vocabularies; // Show recent words if no search
+    : vocabularies.slice(0, 8);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header Section */}
-      <motion.header
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground px-6 pt-12 pb-16 rounded-b-[2.5rem] shadow-lg relative overflow-hidden"
+    <div className="min-h-screen bg-background">
+      {/* Hero Section - Reduced Height */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="relative overflow-hidden"
       >
-        {/* Background Decorative Elements */}
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"
-        />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4" />
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-blue-600">
+          <motion.div
+            animate={{
+              rotate: 360,
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-white/10 rounded-full blur-3xl"
+          />
+          <motion.div
+            animate={{
+              rotate: -360,
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 bg-white/5 rounded-full blur-3xl"
+          />
+        </div>
 
-        <div className="max-w-lg mx-auto relative z-10">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">
-                {user ? `Hi, ${user.displayName?.split(" ")[0] || "Learner"}!` : "Welcome!"}
-              </h1>
-              <p className="text-primary-foreground/80 font-medium">
-                {user ? "Let's learn something new today." : "Start your vocabulary journey."}
-              </p>
-            </div>
+        {/* Reduced padding from py-8 sm:py-16 lg:py-20 to py-6 sm:py-10 lg:py-12 */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-4 sm:mb-6"
+          >
+            {/* Welcome Badge */}
             <motion.div
-              whileHover={{ scale: 1.1, rotate: 10 }}
-              className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 shadow-inner"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.05 }}
+              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full mb-3 sm:mb-4"
             >
-              <Brain className="h-6 w-6 text-white" />
+              <span className="text-white/90 text-xs sm:text-sm font-medium">
+                Welcome back, {user?.displayName?.split(" ")[0] || "Learner"}! 👋
+              </span>
             </motion.div>
-          </div>
 
-          {/* Search Bar or Sign In CTA */}
-          {user ? (
+            {/* Main Heading - Reduced margins */}
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4 leading-tight px-4">
+              Continue Your
+              <motion.span
+                className="block bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-orange-300"
+                animate={{
+                  backgroundPosition: ["0%", "100%"]
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                  ease: "easeInOut"
+                }}
+                style={{
+                  backgroundSize: "200% 100%"
+                }}
+              >
+                Learning Journey
+              </motion.span>
+            </h1>
+
+            {/* Reduced text size and margins */}
+            <p className="text-sm sm:text-base lg:text-lg text-white/80 mb-4 sm:mb-6 leading-relaxed max-w-2xl mx-auto px-4">
+              Search for vocabulary, track your progress, and master new words every day.
+            </p>
+
+            {/* Search */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
+              whileHover={{ scale: 1.02 }}
               transition={{ delay: 0.2 }}
-              className="relative"
+              className="relative max-w-2xl mx-auto px-4"
             >
-              <div className="absolute inset-0 bg-white/20 rounded-xl blur-sm transform translate-y-1" />
-              <div className="relative bg-white rounded-xl shadow-lg flex items-center p-1">
-                <Search className="ml-3 h-5 w-5 text-muted-foreground" />
+              <motion.div
+                animate={isSearchFocused ? {
+                  opacity: 0.3,
+                } : {
+                  opacity: 0.2,
+                }}
+                className="absolute inset-0 bg-white/20 rounded-2xl blur-sm transform translate-y-1"
+              />
+              <div className="relative bg-white rounded-2xl shadow-2xl flex items-center p-2 border-2 transition-all duration-300"
+                style={{
+                  borderColor: isSearchFocused ? 'rgba(59, 130, 246, 0.5)' : 'transparent'
+                }}
+              >
+                <Search className="ml-3 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0" />
                 <Input
                   placeholder="Search your vocabulary..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="border-0 bg-transparent focus-visible:ring-0 text-foreground placeholder:text-muted-foreground h-12 text-base"
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  className="border-0 bg-transparent focus-visible:ring-0 text-foreground placeholder:text-muted-foreground h-10 sm:h-12 text-sm sm:text-base flex-1 min-w-0"
                 />
               </div>
             </motion.div>
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Search Results or Recent Vocabularies */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex justify-center py-8"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              >
+                <Loader2 className="h-6 w-6 text-primary" />
+              </motion.div>
+            </motion.div>
           ) : (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
+              key="content"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-4"
             >
-              <Button
-                onClick={() => navigate("/auth")}
-                variant="secondary"
-                className="w-full h-12 text-lg font-semibold shadow-lg"
-              >
-                Sign in to Search
-              </Button>
+              <h2 className="text-lg sm:text-xl font-bold px-4 sm:px-0">
+                {searchQuery.trim() ? "Search Results" : "Recent Vocabularies"}
+              </h2>
+
+              {filteredVocabs.length > 0 ? (
+                <motion.div
+                  className="grid gap-3 px-4 sm:px-0"
+                  layout
+                >
+                  <AnimatePresence mode="popLayout">
+                    {filteredVocabs.map((vocab, index) => (
+                      <motion.div
+                        key={vocab.id}
+                        layout
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ delay: index * 0.05 }}
+                        whileHover={{ y: -2 }}
+                      >
+                        <VocabCard
+                          vocab={vocab}
+                          index={index}
+                          onClick={() => navigate(`/vocabularies/${vocab.id}`)}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="px-4 sm:px-0"
+                >
+                  <Card className="p-6 sm:p-8 text-center border-2 border-dashed border-muted">
+                    <div className="bg-muted rounded-full h-12 w-12 flex items-center justify-center mx-auto mb-3">
+                      <Search className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-base font-semibold mb-2">No matches found</h3>
+                    <p className="text-muted-foreground text-sm">Try a different search term</p>
+                  </Card>
+                </motion.div>
+              )}
             </motion.div>
           )}
-        </div>
-      </motion.header>
+        </AnimatePresence>
 
-      <div className="max-w-lg mx-auto px-6 -mt-8 relative z-20 space-y-6">
-        {searchQuery ? (
-          // Search Results View
-          <div className="space-y-4 pt-8">
-            <h2 className="text-lg font-semibold px-1">Search Results</h2>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : filteredVocabs.length > 0 ? (
-              <div className="space-y-3">
-                {filteredVocabs.map((vocab, index) => (
-                  <VocabCard
-                    key={vocab.id}
-                    vocab={vocab}
-                    index={index}
-                    onClick={() => navigate(`/vocabularies/${vocab.id}`)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-12 bg-card rounded-xl shadow-sm border"
-              >
-                <div className="bg-muted/50 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-                  <Search className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">No matches found</h3>
-                <p className="text-muted-foreground">Try a different search term</p>
-              </motion.div>
-            )}
-          </div>
-        ) : (
-          // Default Home View
-          <>
-            {/* Guest View */}
-            {!user && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Card className="p-6 border-0 shadow-lg bg-card text-center space-y-4">
-                  <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-                    <BookOpen className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">Unlock Full Access</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Sign in to search words, track your progress, and access the full vocabulary collection.
-                    </p>
-                  </div>
-                  <Button onClick={() => navigate("/auth")} className="w-full">
-                    Sign In Now
-                  </Button>
-                </Card>
-              </motion.div>
-            )}
-
-            {/* Quick Actions */}
-            {isAdmin && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <Button
-                  onClick={() => navigate("/vocabularies/add")}
-                  className="w-full py-8 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white shadow-lg rounded-2xl flex items-center justify-between px-6 group transition-all hover:scale-[1.02]"
-                >
-                  <div className="flex flex-col items-start">
-                    <span className="text-lg font-bold">Add New Word</span>
-                    <span className="text-primary-foreground/80 text-xs font-normal">Expand your collection</span>
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform">
-                    <Plus className="h-6 w-6" />
-                  </div>
-                </Button>
-              </motion.div>
-            )}
-
-            {/* Daily Tip */}
+        {/* Daily Tip - Reduced margins */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-8 sm:mt-10 px-4 sm:px-0"
+        >
+          <Card className="p-4 sm:p-6 border-0 shadow-lg bg-gradient-to-br from-accent/10 to-transparent relative overflow-hidden">
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute top-0 right-0 p-2 opacity-10"
             >
-              <Card className="p-6 border-0 shadow-lg bg-gradient-to-br from-accent/10 to-transparent relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <Sparkles className="h-24 w-24 text-accent" />
-                </div>
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="p-2 rounded-lg bg-accent/20">
-                      <Zap className="h-4 w-4 text-accent-foreground dark:text-accent" />
-                    </div>
-                    <h3 className="font-semibold text-foreground">Daily Tip</h3>
-                  </div>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Practice speaking new words aloud using the text-to-speech feature.
-                    Hearing pronunciation helps with retention and builds confidence!
-                  </p>
-                </div>
-              </Card>
+              <Sparkles className="h-16 w-16 sm:h-20 sm:w-20 text-accent" />
             </motion.div>
-          </>
-        )}
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-3">
+                <motion.div
+                  whileHover={{ rotate: 15 }}
+                  className="p-1.5 sm:p-2 rounded-lg bg-accent/20"
+                >
+                  <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-accent-foreground dark:text-accent" />
+                </motion.div>
+                <h3 className="text-lg sm:text-xl font-bold">Daily Learning Tip</h3>
+              </div>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Practice speaking new words aloud using the text-to-speech feature.
+                Hearing pronunciation helps with retention and builds confidence!
+              </p>
+            </div>
+          </Card>
+        </motion.section>
       </div>
-
     </div>
   );
 }
