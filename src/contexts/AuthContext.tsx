@@ -71,8 +71,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const { setDoc, serverTimestamp } = await import('firebase/firestore');
           const userRef = doc(db, 'user_roles', user.uid);
 
-          console.log('Checking user_roles for:', user.uid);
-
           // Use getDoc with source option for offline support
           const roleDoc = await getDoc(userRef);
 
@@ -86,18 +84,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (!roleDoc.exists()) {
             // Create new user document
-            console.log('Creating new user in user_roles:', user.uid);
             await setDoc(userRef, {
               ...userData,
               role: 'user',
               createdAt: serverTimestamp()
             });
-            console.log('User created successfully in user_roles');
             setIsAdmin(false);
             setCachedRole(user.uid, 'user');
           } else {
             // Update existing user document with latest auth profile
-            console.log('Updating existing user in user_roles:', user.uid);
             const role = roleDoc.data()?.role || 'user';
 
             // Update document in background (don't await to avoid blocking)
@@ -105,7 +100,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               console.warn('Failed to update user data (offline?):', err);
             });
 
-            console.log('User role loaded:', role);
             setIsAdmin(role === 'admin');
             setCachedRole(user.uid, role);
           }

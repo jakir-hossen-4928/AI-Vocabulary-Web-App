@@ -1,6 +1,10 @@
-import { Home, BookOpen, GraduationCap, User, Heart, Globe, Shield, Users } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Heart, Globe, Shield, Users, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const navItems = [
     { path: "/", icon: Home, label: "Home" },
@@ -13,6 +17,7 @@ const navItems = [
 
 export const Sidebar = () => {
     const { isAdmin } = useAuth();
+    const navigate = useNavigate();
 
     return (
         <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 border-r bg-card z-50">
@@ -60,6 +65,25 @@ export const Sidebar = () => {
                     </>
                 )}
             </nav>
-        </aside>
+
+
+            <div className="p-4 border-t mt-auto">
+                <button
+                    onClick={async () => {
+                        try {
+                            await signOut(auth);
+                            toast.success("Signed out successfully");
+                            navigate("/auth");
+                        } catch (error) {
+                            toast.error("Failed to sign out");
+                        }
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+                >
+                    <LogOut className="h-5 w-5" />
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </aside >
     );
 };

@@ -32,7 +32,6 @@ export default function ResourceDetail() {
                     navigate("/resources");
                 }
             } catch (error) {
-                console.error("Error fetching resource details:", error);
                 toast.error("Failed to load resource details");
             } finally {
                 setLoading(false);
@@ -51,7 +50,7 @@ export default function ResourceDetail() {
                     url: window.location.href,
                 });
             } catch (error) {
-                console.log("Error sharing:", error);
+                // Ignore share errors
             }
         } else {
             navigator.clipboard.writeText(window.location.href);
