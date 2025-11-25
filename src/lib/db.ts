@@ -13,51 +13,89 @@ const DB_NAME = 'vocab-db';
 const DB_VERSION = 1;
 
 export const initDB = async () => {
-    return openDB<VocabDB>(DB_NAME, DB_VERSION, {
-        upgrade(db) {
-            if (!db.objectStoreNames.contains('vocabularies')) {
-                const store = db.createObjectStore('vocabularies', {
-                    keyPath: 'id',
-                });
-                store.createIndex('by-date', 'createdAt');
-            }
-        },
-    });
+    try {
+        return await openDB<VocabDB>(DB_NAME, DB_VERSION, {
+            upgrade(db) {
+                if (!db.objectStoreNames.contains('vocabularies')) {
+                    const store = db.createObjectStore('vocabularies', {
+                        keyPath: 'id',
+                    });
+                    store.createIndex('by-date', 'createdAt');
+                }
+            },
+        });
+    } catch (error) {
+        console.error('IndexedDB initialization failed:', error);
+        // Return null if IndexedDB is not available
+        return null;
+    }
 };
 
 export const dbService = {
     async getAllVocabularies() {
-        const db = await initDB();
-        // Return in descending order (newest first)
-        return (await db.getAllFromIndex('vocabularies', 'by-date')).reverse();
+        try {
+            const db = await initDB();
+            if (!db) return [];
+            // Return in descending order (newest first)
+            return (await db.getAllFromIndex('vocabularies', 'by-date')).reverse();
+        } catch (error) {
+            console.error('Failed to get vocabularies from IndexedDB:', error);
+            return [];
+        }
     },
 
     async getVocabulary(id: string) {
-        const db = await initDB();
-        return db.get('vocabularies', id);
+        try {
+            const db = await initDB();
+            if (!db) return undefined;
+            return db.get('vocabularies', id);
+        } catch (error) {
+            console.error('Failed to get vocabulary from IndexedDB:', error);
+            return undefined;
+        }
     },
 
     async addVocabulary(vocab: Vocabulary) {
-        const db = await initDB();
-        return db.put('vocabularies', vocab);
+        try {
+            const db = await initDB();
+            if (!db) return;
+            return db.put('vocabularies', vocab);
+        } catch (error) {
+            console.error('Failed to add vocabulary to IndexedDB:', error);
+        }
     },
 
     async addVocabularies(vocabs: Vocabulary[]) {
-        const db = await initDB();
-        const tx = db.transaction('vocabularies', 'readwrite');
-        await Promise.all([
-            ...vocabs.map(v => tx.store.put(v)),
-            tx.done
-        ]);
+        try {
+            const db = await initDB();
+            if (!db) return;
+            const tx = db.transaction('vocabularies', 'readwrite');
+            await Promise.all([
+                ...vocabs.map(v => tx.store.put(v)),
+                tx.done
+            ]);
+        } catch (error) {
+            console.error('Failed to add vocabularies to IndexedDB:', error);
+        }
     },
 
     async deleteVocabulary(id: string) {
-        const db = await initDB();
-        return db.delete('vocabularies', id);
+        try {
+            const db = await initDB();
+            if (!db) return;
+            return db.delete('vocabularies', id);
+        } catch (error) {
+            console.error('Failed to delete vocabulary from IndexedDB:', error);
+        }
     },
 
     async clear() {
-        const db = await initDB();
-        return db.clear('vocabularies');
+        try {
+            const db = await initDB();
+            if (!db) return;
+            return db.clear('vocabularies');
+        } catch (error) {
+            console.error('Failed to clear IndexedDB:', error);
+        }
     }
 };

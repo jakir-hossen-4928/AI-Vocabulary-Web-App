@@ -21,7 +21,6 @@ import NotFound from "./pages/NotFound";
 import { AdminRoute } from "@/components/AdminRoute";
 
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { useFcm } from "@/hooks/use-fcm";
 
 const queryClient = new QueryClient();
 
@@ -86,8 +85,6 @@ const AppRoutes = () => {
 import { NetworkStatus } from "@/components/NetworkStatus";
 
 const App = () => {
-  useFcm();
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

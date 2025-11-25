@@ -7,16 +7,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut, Shield, BookOpen, TrendingUp, GraduationCap, Download } from "lucide-react";
+import { User, LogOut, Shield, BookOpen, TrendingUp, GraduationCap, Download, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { motion } from "framer-motion";
+import { generateVocabulariesPDF } from "@/lib/pdf/allvocabularies";
+import { dbService } from "@/lib/db";
 
 export default function Profile() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [totalWords, setTotalWords] = useState(0);
   const [masteredWords, setMasteredWords] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
   const { isInstallable, installApp } = useInstallPrompt();
 
   useEffect(() => {
@@ -51,6 +54,34 @@ export default function Profile() {
       navigate("/auth");
     } catch (error: any) {
       toast.error(error.message || "Failed to sign out");
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!user) return;
+
+    setIsDownloading(true);
+    try {
+      // Fetch vocabularies from local IndexedDB to save Firestore reads
+      const vocabularies = await dbService.getAllVocabularies();
+
+      if (vocabularies.length === 0) {
+        toast.error("No vocabularies found to download. Please visit the Vocabularies page to sync your data first.");
+        return;
+      }
+
+      await generateVocabulariesPDF({
+        vocabularies,
+        userName: user.displayName || "User",
+        userEmail: user.email || "",
+      });
+
+      toast.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      toast.error("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -109,6 +140,24 @@ export default function Profile() {
               </div>
             </div>
           </Card>
+        </motion.div>
+
+        {/* Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="space-y-3 mb-6"
+        >
+          <Button
+            onClick={handleDownloadPDF}
+            variant="outline"
+            className="w-full border-primary/20"
+            disabled={isDownloading}
+          >
+            <FileDown className="mr-2 h-4 w-4 text-primary" />
+            {isDownloading ? "Generating PDF..." : "Download Vocabularies (PDF)"}
+          </Button>
         </motion.div>
 
         {isAdmin && (
