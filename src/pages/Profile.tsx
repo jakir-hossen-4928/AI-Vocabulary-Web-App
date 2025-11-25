@@ -116,14 +116,23 @@ export default function Profile() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
+            className="space-y-3 mb-6"
           >
             <Button
               onClick={() => navigate("/admin/users")}
               variant="outline"
-              className="w-full mb-6 border-primary/20 "
+              className="w-full border-primary/20"
             >
               <User className="mr-2 h-4 w-4 text-primary" />
               Manage Users
+            </Button>
+            <Button
+              onClick={() => navigate("/admin/duplicates")}
+              variant="outline"
+              className="w-full border-primary/20"
+            >
+              <Shield className="mr-2 h-4 w-4 text-primary" />
+              Duplicate Manager
             </Button>
           </motion.div>
         )}

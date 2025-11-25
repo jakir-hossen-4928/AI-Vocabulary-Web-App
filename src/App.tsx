@@ -16,6 +16,7 @@ import ResourceDetail from "./pages/ResourceDetail";
 import ResourcesGallery from "./pages/ResourcesGallery";
 import AdminUsers from "./pages/AdminUsers";
 import Favorites from "./pages/Favorites";
+import DuplicateManager from "./pages/DuplicateManager";
 import NotFound from "./pages/NotFound";
 import { AdminRoute } from "@/components/AdminRoute";
 
@@ -74,6 +75,7 @@ const AppRoutes = () => {
         <Route path="/admin/resources" element={<Navigate to="/resources" replace />} />
         <Route path="/admin/grammar" element={<Navigate to="/resources" replace />} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+        <Route path="/admin/duplicates" element={<AdminRoute><DuplicateManager /></AdminRoute>} />
         <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Route>

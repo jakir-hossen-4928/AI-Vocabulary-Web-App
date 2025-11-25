@@ -3,7 +3,7 @@ import { NavLink } from "@/components/NavLink";
 
 const navItems = [
     { path: "/", icon: Home, label: "Home" },
-    { path: "/vocabularies", icon: BookOpen, label: "Words" },
+    { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
     { path: "/resources", icon: GraduationCap, label: "Resources" },
     { path: "/ielts", icon: Globe, label: "IELTS Prep" },
     { path: "/favorites", icon: Heart, label: "Favorites" },
