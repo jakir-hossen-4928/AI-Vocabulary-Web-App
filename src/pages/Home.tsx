@@ -8,6 +8,8 @@ import { useVocabularies } from "@/hooks/useVocabularies";
 import { VocabCard } from "@/components/VocabCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/useDebounce";
+import { WordChatModal } from "@/components/WordChatModal";
+import { Vocabulary } from "@/types/vocabulary";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,6 +20,11 @@ export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<string[]>([]);
+
+  // Chat State
+  const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const loadFavorites = () => {
@@ -61,6 +68,15 @@ export default function Home() {
   };
 
   const vocabularies = data || [];
+
+  const handleImproveMeaning = async (id: string) => {
+    const vocab = vocabularies.find(v => v.id === id);
+    if (!vocab) return;
+
+    setChatVocab(vocab);
+    setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
+    setIsChatOpen(true);
+  };
 
   const filteredVocabs = debouncedSearch.trim()
     ? vocabularies.filter(v =>
@@ -191,6 +207,7 @@ export default function Home() {
                       isFavorite={favorites.includes(vocab.id)}
                       onToggleFavorite={toggleFavorite}
                       onClick={() => navigate(`/vocabularies/${vocab.id}`)}
+                      onImproveMeaning={handleImproveMeaning}
                     />
                   ))}
                 </div>
@@ -243,6 +260,12 @@ export default function Home() {
           </Card>
         </motion.section>
       </div>
+      <WordChatModal
+        vocabulary={chatVocab}
+        open={isChatOpen}
+        onOpenChange={setIsChatOpen}
+        initialPrompt={chatInitialPrompt}
+      />
     </div>
   );
 }
