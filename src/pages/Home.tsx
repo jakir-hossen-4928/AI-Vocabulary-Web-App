@@ -67,7 +67,11 @@ export default function Home() {
     setSearchQuery("");
   };
 
-  const vocabularies = data || [];
+  const vocabularies = [...(data || [])].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
+  });
 
   const handleImproveMeaning = async (id: string) => {
     const vocab = vocabularies.find(v => v.id === id);

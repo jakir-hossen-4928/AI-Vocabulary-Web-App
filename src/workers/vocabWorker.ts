@@ -37,14 +37,14 @@ self.onmessage = (e: MessageEvent<FilterPayload>) => {
     }).sort((a, b) => {
         switch (sortOrder) {
             case "oldest":
-                return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
             case "a-z":
                 return a.english.localeCompare(b.english);
             case "z-a":
                 return b.english.localeCompare(a.english);
             case "newest":
             default:
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                return (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0);
         }
     });
 

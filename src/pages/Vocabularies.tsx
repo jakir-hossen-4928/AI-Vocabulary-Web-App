@@ -363,7 +363,7 @@ export default function Vocabularies() {
         ref={parentRef}
         className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto pb-20 md:pb-0"
       >
-        {isLoading && filteredVocabs.length === 0 ? (
+        {(isLoading || isWorkerFiltering) && filteredVocabs.length === 0 ? (
           <div className="py-12 flex justify-center">
             <LoadingSpinner />
           </div>
