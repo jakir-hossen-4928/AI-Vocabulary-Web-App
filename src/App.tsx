@@ -39,12 +39,6 @@ import { Layout } from "@/components/Layout";
 import { LandingLayout } from "@/components/LandingLayout";
 import LandingPage from "./pages/LandingPage";
 
-import IELTSDashboard from "./pages/ielts/IELTSDashboard";
-import Speaking from "./pages/ielts/Speaking";
-import Reading from "./pages/ielts/Reading";
-import Writing from "./pages/ielts/Writing";
-import Listening from "./pages/ielts/Listening";
-
 const AppRoutes = () => {
   const { user, loading } = useAuth();
 
@@ -73,13 +67,6 @@ const AppRoutes = () => {
         {/* Redirects from old grammar routes to new resources routes */}
         <Route path="/grammar" element={<Navigate to="/resources" replace />} />
         <Route path="/grammar/:id" element={<Navigate to="/resources/:id" replace />} />
-
-        {/* IELTS Routes */}
-        <Route path="/ielts" element={<ProtectedRoute><IELTSDashboard /></ProtectedRoute>} />
-        <Route path="/ielts/speaking" element={<ProtectedRoute><Speaking /></ProtectedRoute>} />
-        <Route path="/ielts/reading" element={<ProtectedRoute><Reading /></ProtectedRoute>} />
-        <Route path="/ielts/writing" element={<ProtectedRoute><Writing /></ProtectedRoute>} />
-        <Route path="/ielts/listening" element={<ProtectedRoute><Listening /></ProtectedRoute>} />
 
         {/* Redirect old admin routes to resources gallery */}
         <Route path="/admin/resources" element={<Navigate to="/resources" replace />} />

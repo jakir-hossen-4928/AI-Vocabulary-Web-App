@@ -31,11 +31,12 @@ import { motion } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Vocabulary } from "@/types/vocabulary";
+import { WordChatModal } from "@/components/WordChatModal";
 
 export default function Vocabularies() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: vocabularies = [], isLoading } = useVocabularies();
-  const { deleteVocabulary } = useVocabularyMutations();
+  const { deleteVocabulary, updateVocabulary } = useVocabularyMutations();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -50,6 +51,11 @@ export default function Vocabularies() {
   const [filteredVocabs, setFilteredVocabs] = useState<Vocabulary[]>([]);
   const [isWorkerFiltering, setIsWorkerFiltering] = useState(true); // Start true to avoid flash
   const workerRef = useRef<Worker | null>(null);
+
+  // Chat State
+  const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
 
   const debouncedSearch = useDebounce(searchQuery, 150);
 
@@ -172,6 +178,15 @@ export default function Vocabularies() {
     } catch (error) {
       console.error("Failed to delete vocabulary:", error);
     }
+  };
+
+  const handleImproveMeaning = async (id: string) => {
+    const vocab = vocabularies.find(v => v.id === id);
+    if (!vocab) return;
+
+    setChatVocab(vocab);
+    setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
+    setIsChatOpen(true);
   };
 
   return (
@@ -395,6 +410,7 @@ export default function Vocabularies() {
                     onToggleFavorite={toggleFavorite}
                     onClick={() => navigate(`/vocabularies/${vocab.id}`)}
                     onDelete={handleDelete}
+                    onImproveMeaning={handleImproveMeaning}
                     isAdmin={isAdmin}
                     className="h-full"
                   />
@@ -404,6 +420,12 @@ export default function Vocabularies() {
           </div>
         )}
       </div>
+      <WordChatModal
+        vocabulary={chatVocab}
+        open={isChatOpen}
+        onOpenChange={setIsChatOpen}
+        initialPrompt={chatInitialPrompt}
+      />
     </div>
   );
 }

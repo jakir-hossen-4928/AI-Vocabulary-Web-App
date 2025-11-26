@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Loader2, Plus, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { generateVocabularyFromWord } from "@/services/aiService";
+import { generateVocabularyFromWord } from "@/services/openaiService";
 import { useVocabularyMutations } from "@/hooks/useVocabularies";
 import { motion } from "framer-motion";
 

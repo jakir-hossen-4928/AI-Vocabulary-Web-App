@@ -1,4 +1,4 @@
-import { Home, BookOpen, GraduationCap, User, Heart, Globe, Shield, Users, LogOut } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Heart, Globe, Shield, Users, LogOut, BarChart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "firebase/auth";
@@ -10,7 +10,6 @@ const navItems = [
     { path: "/", icon: Home, label: "Home" },
     { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
     { path: "/resources", icon: GraduationCap, label: "Resources" },
-    { path: "/ielts", icon: Globe, label: "IELTS Prep" },
     { path: "/favorites", icon: Heart, label: "Favorites" },
     { path: "/profile", icon: User, label: "Profile" },
 ];

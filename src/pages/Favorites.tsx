@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { VocabCard } from "@/components/VocabCard";
 import { Heart, Loader2, Download } from "lucide-react";
-import { useVocabularies } from "@/hooks/useVocabularies";
+import { useVocabularies, useVocabularyMutations } from "@/hooks/useVocabularies";
+import { WordChatModal } from "@/components/WordChatModal";
+import { Vocabulary } from "@/types/vocabulary";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { generateFavoritesPDF } from "@/lib/pdf/generateFavoritesPdf";
@@ -11,10 +13,16 @@ import { motion } from "framer-motion";
 
 export default function Favorites() {
   const { data: vocabularies = [], isLoading } = useVocabularies();
+  const { updateVocabulary } = useVocabularyMutations();
   const [favorites, setFavorites] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Chat State
+  const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!user) {
@@ -41,6 +49,15 @@ export default function Favorites() {
       window.dispatchEvent(new Event('storage'));
       return newFavorites;
     });
+  };
+
+  const handleImproveMeaning = async (id: string) => {
+    const vocab = vocabularies.find(v => v.id === id);
+    if (!vocab) return;
+
+    setChatVocab(vocab);
+    setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
+    setIsChatOpen(true);
   };
 
   const handleExport = async () => {
@@ -125,13 +142,19 @@ export default function Favorites() {
                 isFavorite={true}
                 onToggleFavorite={toggleFavorite}
                 onClick={() => navigate(`/vocabularies/${vocab.id}`)}
+                onImproveMeaning={handleImproveMeaning}
               />
             ))}
           </div>
         )}
       </div>
 
-
-    </div>
+      <WordChatModal
+        vocabulary={chatVocab}
+        open={isChatOpen}
+        onOpenChange={setIsChatOpen}
+        initialPrompt={chatInitialPrompt}
+      />
+    </div >
   );
 }

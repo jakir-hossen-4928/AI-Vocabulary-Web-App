@@ -11,6 +11,8 @@ import { User, LogOut, Shield, Download, BookOpen, TrendingUp } from "lucide-rea
 import { toast } from "sonner";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { motion } from "framer-motion";
+import { TokenUsageStats } from "@/components/TokenUsageStats";
+import { OpenAIApiKeyManager } from "@/components/OpenAIApiKeyManager";
 
 export default function Profile() {
   const { user, isAdmin, loading } = useAuth();
@@ -143,6 +145,28 @@ export default function Profile() {
               </div>
             </div>
           </Card>
+        </motion.div>
+
+        {/* Token Usage Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="mb-6"
+        >
+          <h3 className="text-lg font-semibold mb-3">AI Usage Statistics</h3>
+          <TokenUsageStats />
+        </motion.div>
+
+        {/* API Key Management */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-6"
+        >
+          <h3 className="text-lg font-semibold mb-3">API Configuration</h3>
+          <OpenAIApiKeyManager />
         </motion.div>
 
         {/* Admin Actions */}

@@ -1,10 +1,10 @@
-import { Volume2, Heart, Trash2 } from "lucide-react";
+import { Volume2, Heart, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Vocabulary } from "@/types/vocabulary";
 import { speakText } from "@/services/ttsService";
-import { memo } from "react";
+import { memo, useState } from "react";
 
 interface VocabCardProps {
   vocab: Vocabulary;
@@ -13,6 +13,7 @@ interface VocabCardProps {
   onClick?: () => void;
   index?: number;
   onDelete?: (id: string) => void;
+  onImproveMeaning?: (id: string) => Promise<void>;
   isAdmin?: boolean;
   style?: React.CSSProperties;
   className?: string;
@@ -24,10 +25,12 @@ export const VocabCard = memo(({
   onToggleFavorite,
   onClick,
   onDelete,
+  onImproveMeaning,
   isAdmin = false,
   style,
   className
 }: VocabCardProps) => {
+  const [isImproving, setIsImproving] = useState(false);
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -46,6 +49,20 @@ export const VocabCard = memo(({
     }
   };
 
+  const handleImprove = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onImproveMeaning) {
+      setIsImproving(true);
+      try {
+        await onImproveMeaning(vocab.id);
+      } catch (error) {
+        console.error("Failed to improve meaning:", error);
+      } finally {
+        setIsImproving(false);
+      }
+    }
+  };
+
   return (
     <div
       style={style}
@@ -59,6 +76,22 @@ export const VocabCard = memo(({
           <div className="flex-1 min-w-0">
             <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
               <h3 className="text-base sm:text-xl font-bold text-foreground break-words">{vocab.bangla}</h3>
+              {onImproveMeaning && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 sm:h-6 sm:w-6 -ml-1 text-muted-foreground hover:text-primary"
+                  onClick={handleImprove}
+                  disabled={isImproving}
+                  title="Get a better/easier Bangla meaning"
+                >
+                  {isImproving ? (
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+                  )}
+                </Button>
+              )}
               <Badge variant="secondary" className="text-[10px] sm:text-xs flex-shrink-0">
                 {vocab.partOfSpeech}
               </Badge>
