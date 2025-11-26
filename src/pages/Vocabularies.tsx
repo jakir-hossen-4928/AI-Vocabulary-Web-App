@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VocabCard } from "@/components/VocabCard";
-import { Plus, Search, Filter, X } from "lucide-react";
+import { Plus, Search, Filter, X, RefreshCw } from "lucide-react";
 import { useVocabularies, useVocabularyMutations } from "@/hooks/useVocabularies";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import {
@@ -32,10 +32,11 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Vocabulary } from "@/types/vocabulary";
 import { WordChatModal } from "@/components/WordChatModal";
+import { toast } from "sonner";
 
 export default function Vocabularies() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: vocabularies = [], isLoading } = useVocabularies();
+  const { data: vocabularies = [], isLoading, refresh, isRefetching } = useVocabularies();
   const { deleteVocabulary, updateVocabulary } = useVocabularyMutations();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const { user, isAdmin } = useAuth();
@@ -49,7 +50,7 @@ export default function Vocabularies() {
 
   // Worker State
   const [filteredVocabs, setFilteredVocabs] = useState<Vocabulary[]>([]);
-  const [isWorkerFiltering, setIsWorkerFiltering] = useState(true); // Start true to avoid flash
+  const [isWorkerFiltering, setIsWorkerFiltering] = useState(false);
   const workerRef = useRef<Worker | null>(null);
 
   // Chat State
@@ -128,11 +129,11 @@ export default function Vocabularies() {
 
   // Post message to worker
   useEffect(() => {
-    if (workerRef.current) {
-      // Only show loading if we are actually waiting for a change
-      // But for instant search, we might not want to flicker 'loading' too aggressively
-      // However, for large datasets, we want to know it's processing.
-      setIsWorkerFiltering(true);
+    if (workerRef.current && vocabularies.length > 0) {
+      // Only show loading for search queries or filter changes, not initial load
+      if (debouncedSearch || selectedPos !== "all" || showFavorites || sortOrder !== "newest") {
+        setIsWorkerFiltering(true);
+      }
       workerRef.current.postMessage({
         vocabularies,
         searchQuery: debouncedSearch,
@@ -189,6 +190,15 @@ export default function Vocabularies() {
     setIsChatOpen(true);
   };
 
+  const handleRefresh = async () => {
+    try {
+      await refresh();
+      toast.success("Vocabularies refreshed successfully");
+    } catch (error) {
+      toast.error("Failed to refresh vocabularies");
+    }
+  };
+
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
       {/* Header */}
@@ -206,27 +216,40 @@ export default function Vocabularies() {
                 {filteredVocabs.length} words found
               </p>
             </div>
-            {isAdmin && (
-              <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
-                <Button
-                  onClick={() => navigate("/vocabularies/add")}
-                  size="sm"
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-sm text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
-                >
-                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Add</span>
-                </Button>
-                <Button
-                  onClick={() => navigate("/vocabularies/bulk-add")}
-                  size="sm"
-                  variant="secondary"
-                  className="bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 shadow-sm text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 hidden xs:flex"
-                >
-                  <span className="hidden sm:inline">Bulk Upload</span>
-                  <span className="sm:hidden">Bulk</span>
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+              {/* Refresh Button */}
+              <Button
+                onClick={handleRefresh}
+                disabled={isRefetching}
+                size="sm"
+                variant="secondary"
+                className="bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 shadow-sm h-8 sm:h-9 w-8 sm:w-9 p-0"
+                title="Refresh vocabularies"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+              </Button>
+              {isAdmin && (
+                <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+                  <Button
+                    onClick={() => navigate("/vocabularies/add")}
+                    size="sm"
+                    className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-sm text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
+                  >
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Add</span>
+                  </Button>
+                  <Button
+                    onClick={() => navigate("/vocabularies/bulk-add")}
+                    size="sm"
+                    variant="secondary"
+                    className="bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 shadow-sm text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 hidden xs:flex"
+                  >
+                    <span className="hidden sm:inline">Bulk Upload</span>
+                    <span className="sm:hidden">Bulk</span>
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Search and Filter Bar */}
@@ -363,9 +386,15 @@ export default function Vocabularies() {
         ref={parentRef}
         className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto pb-20 md:pb-0"
       >
-        {(isLoading || isWorkerFiltering) && filteredVocabs.length === 0 ? (
-          <div className="py-12 flex justify-center">
+        {isLoading ? (
+          <div className="py-12 flex flex-col items-center justify-center gap-3">
             <LoadingSpinner />
+            <p className="text-sm text-muted-foreground">Loading vocabularies...</p>
+          </div>
+        ) : isWorkerFiltering && filteredVocabs.length === 0 ? (
+          <div className="py-12 flex flex-col items-center justify-center gap-3">
+            <LoadingSpinner />
+            <p className="text-sm text-muted-foreground">Searching...</p>
           </div>
         ) : filteredVocabs.length === 0 ? (
           <div className="text-center py-8 sm:py-12 px-4">
@@ -374,7 +403,202 @@ export default function Vocabularies() {
             </div>
             <h3 className="text-base sm:text-lg font-semibold mb-1.5 sm:mb-2">No words found</h3>
             <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 max-w-xs mx-auto">
-              Try adjusting your filters or search query to find what you're looking for.
+              {searchQuery ? `No results for "${searchQuery}"` : "Try adjusting your filters to find what you're looking for."}
+            </p>
+            <Button variant="outline" onClick={clearFilters} className="h-9 sm:h-10 text-sm sm:text-base">
+              Clear Filters
+            </Button>
+          </div>
+        ) : (
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+              const vocab = filteredVocabs[virtualItem.index];
+              return (
+                <div
+                  key={virtualItem.key}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualItem.size}px`,
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                  className="px-3 sm:px-4 py-3"
+                >
+                  <VocabCard
+                    vocab={vocab}
+                    index={virtualItem.index}
+                    isFavorite={favorites.includes(vocab.id)}
+                    onToggleFavorite={toggleFavorite}
+                    onClick={() => navigate(`/vocabularies/${vocab.id}`)}
+                    onDelete={handleDelete}
+                    onImproveMeaning={handleImproveMeaning}
+                    isAdmin={isAdmin}
+                    className="h-full"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+          <div className="flex gap-1.5 sm:gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search words..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 sm:pl-10 pr-8 sm:pr-10 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus-visible:ring-primary-foreground/30 h-9 sm:h-10 text-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-primary-foreground/50 hover:text-primary-foreground"
+                >
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+              )}
+            </div>
+
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="secondary" className="bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 border-primary-foreground/20 relative h-9 sm:h-10 w-9 sm:w-10 p-0 flex-shrink-0">
+                  <Filter className="h-4 w-4" />
+                  {activeFiltersCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 bg-red-500 rounded-full border-2 border-primary text-[10px] sm:text-xs flex items-center justify-center font-bold text-white">{activeFiltersCount}</span>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="rounded-t-[20px] h-[85vh] sm:h-[80vh] px-4 sm:px-6">
+                <SheetHeader className="mb-4 sm:mb-6">
+                  <SheetTitle className="text-lg sm:text-xl">Filter & Sort</SheetTitle>
+                  <SheetDescription className="text-xs sm:text-sm">
+                    Customize how you view your vocabulary list.
+                  </SheetDescription>
+                </SheetHeader>
+
+                <div className="space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(85vh-180px)] sm:max-h-[calc(80vh-180px)]">
+                  {/* Sort Order */}
+                  <div className="space-y-2">
+                    <Label className="text-sm sm:text-base">Sort By</Label>
+                    <Select value={sortOrder} onValueChange={setSortOrder}>
+                      <SelectTrigger className="h-10 sm:h-11">
+                        <SelectValue placeholder="Select sort order" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                        <SelectItem value="oldest">Oldest First</SelectItem>
+                        <SelectItem value="a-z">A-Z (English)</SelectItem>
+                        <SelectItem value="z-a">Z-A (English)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Part of Speech */}
+                  <div className="space-y-2">
+                    <Label className="text-sm sm:text-base">Part of Speech</Label>
+                    <Select value={selectedPos} onValueChange={setSelectedPos}>
+                      <SelectTrigger className="h-10 sm:h-11">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="noun">Noun</SelectItem>
+                        <SelectItem value="verb">Verb</SelectItem>
+                        <SelectItem value="adjective">Adjective</SelectItem>
+                        <SelectItem value="adverb">Adverb</SelectItem>
+                        <SelectItem value="preposition">Preposition</SelectItem>
+                        <SelectItem value="conjunction">Conjunction</SelectItem>
+                        <SelectItem value="pronoun">Pronoun</SelectItem>
+                        <SelectItem value="interjection">Interjection</SelectItem>
+                        <SelectItem value="phrase">Phrase</SelectItem>
+                        <SelectItem value="idiom">Idiom</SelectItem>
+                        <SelectItem value="phrasal verb">Phrasal Verb</SelectItem>
+                        <SelectItem value="collocation">Collocation</SelectItem>
+                        <SelectItem value="linking phrase">Linking Phrase</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Favorites Toggle */}
+                  <div className="flex items-center justify-between p-3 sm:p-4 border rounded-lg">
+                    <div className="space-y-0.5 flex-1 pr-2">
+                      <Label className="text-sm sm:text-base">Favorites Only</Label>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Show only words you've marked as favorite
+                      </p>
+                    </div>
+                    <Switch
+                      checked={showFavorites}
+                      onCheckedChange={setShowFavorites}
+                    />
+                  </div>
+
+                  {/* Active Filters Summary */}
+                  {activeFiltersCount > 0 && (
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-2">
+                      {selectedPos !== "all" && (
+                        <Badge variant="secondary" onClick={() => setSelectedPos("all")} className="cursor-pointer text-xs sm:text-sm">
+                          Type: {selectedPos} <X className="ml-1 h-3 w-3" />
+                        </Badge>
+                      )}
+                      {sortOrder !== "newest" && (
+                        <Badge variant="secondary" onClick={() => setSortOrder("newest")} className="cursor-pointer text-xs sm:text-sm">
+                          Sort: {sortOrder} <X className="ml-1 h-3 w-3" />
+                        </Badge>
+                      )}
+                      {showFavorites && (
+                        <Badge variant="secondary" onClick={() => setShowFavorites(false)} className="cursor-pointer text-xs sm:text-sm">
+                          Favorites Only <X className="ml-1 h-3 w-3" />
+                        </Badge>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 text-xs text-muted-foreground">
+                        Clear All
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <SheetFooter className="mt-4 sm:mt-8">
+                  <SheetClose asChild>
+                    <Button className="w-full h-10 sm:h-11 text-sm sm:text-base">Show {filteredVocabs.length} Results</Button>
+                  </SheetClose>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </motion.header>
+
+      <div
+        ref={parentRef}
+        className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto pb-20 md:pb-0"
+      >
+        {isLoading ? (
+          <div className="py-12 flex flex-col items-center justify-center gap-3">
+            <LoadingSpinner />
+            <p className="text-sm text-muted-foreground">Loading vocabularies...</p>
+          </div>
+        ) : isWorkerFiltering && filteredVocabs.length === 0 ? (
+          <div className="py-12 flex flex-col items-center justify-center gap-3">
+            <LoadingSpinner />
+            <p className="text-sm text-muted-foreground">Searching...</p>
+          </div>
+        ) : filteredVocabs.length === 0 ? (
+          <div className="text-center py-8 sm:py-12 px-4">
+            <div className="bg-muted/50 rounded-full h-12 w-12 sm:h-16 sm:w-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <Search className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold mb-1.5 sm:mb-2">No words found</h3>
+            <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 max-w-xs mx-auto">
+              {searchQuery ? `No results for "${searchQuery}"` : "Try adjusting your filters to find what you're looking for."}
             </p>
             <Button variant="outline" onClick={clearFilters} className="h-9 sm:h-10 text-sm sm:text-base">
               Clear Filters
@@ -424,8 +648,7 @@ export default function Vocabularies() {
         vocabulary={chatVocab}
         open={isChatOpen}
         onOpenChange={setIsChatOpen}
-        initialPrompt={chatInitialPrompt}
       />
-    </div>
+    </div >
   );
 }

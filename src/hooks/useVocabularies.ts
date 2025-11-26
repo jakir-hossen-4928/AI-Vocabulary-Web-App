@@ -34,7 +34,7 @@ export const useVocabularies = () => {
         loadFromCache();
     }, [queryClient]);
 
-    return useQuery({
+    const queryResult = useQuery({
         queryKey: ["vocabularies"],
         queryFn: async () => {
             try {
@@ -60,6 +60,11 @@ export const useVocabularies = () => {
         },
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
+
+    return {
+        ...queryResult,
+        refresh: queryResult.refetch,
+    };
 };
 
 export const useVocabularyMutations = () => {
