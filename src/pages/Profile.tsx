@@ -7,18 +7,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut, Shield, Download, BookOpen, TrendingUp } from "lucide-react";
+import { User, LogOut, Shield, Download, BookOpen, TrendingUp, DollarSign, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { motion } from "framer-motion";
-import { TokenUsageStats } from "@/components/TokenUsageStats";
-import { OpenAIApiKeyManager } from "@/components/OpenAIApiKeyManager";
+import { getTotalSpending } from "@/lib/apiKeyStorage";
+import { formatCost } from "@/lib/openaiConfig";
 
 export default function Profile() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [totalWords, setTotalWords] = useState(0);
   const [favoritesCount, setFavoritesCount] = useState(0);
+  const [totalSpending, setTotalSpending] = useState(0);
   const { isInstallable, installApp } = useInstallPrompt();
 
   useEffect(() => {
@@ -33,14 +34,17 @@ export default function Profile() {
       try {
         // Get total vocabularies count
         const vocabColl = collection(db, "vocabularies");
-        const vocabQuery = query(vocabColl, where("userId", "==", user.uid));
-        const vocabSnapshot = await getCountFromServer(vocabQuery);
+        const vocabSnapshot = await getCountFromServer(vocabColl);
         setTotalWords(vocabSnapshot.data().count);
 
         // Get favorites count
         const savedFavorites = localStorage.getItem("favorites");
         const favoritesCount = savedFavorites ? JSON.parse(savedFavorites).length : 0;
         setFavoritesCount(favoritesCount);
+
+        // Get total AI spending
+        const spending = getTotalSpending();
+        setTotalSpending(spending.totalCost);
       } catch (error) {
         console.error("Error fetching stats:", error);
       }
@@ -147,26 +151,33 @@ export default function Profile() {
           </Card>
         </motion.div>
 
-        {/* Token Usage Stats */}
+        {/* Total AI Spending Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
           className="mb-6"
         >
-          <h3 className="text-lg font-semibold mb-3">AI Usage Statistics</h3>
-          <TokenUsageStats />
-        </motion.div>
+          <h3 className="text-lg font-semibold mb-3">AI Usage Summary</h3>
+          <Card className="p-6 shadow-hover bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-500/10 rounded-xl">
+                  <DollarSign className="h-8 w-8 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Total Spending (All Time)</p>
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                    {formatCost(totalSpending)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    OpenAI API usage tracked locally
+                  </p>
+                </div>
+              </div>
 
-        {/* API Key Management */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mb-6"
-        >
-          <h3 className="text-lg font-semibold mb-3">API Configuration</h3>
-          <OpenAIApiKeyManager />
+            </div>
+          </Card>
         </motion.div>
 
         {/* Admin Actions */}
@@ -174,9 +185,10 @@ export default function Profile() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.4 }}
             className="space-y-3 mb-6"
           >
+            <h3 className="text-lg font-semibold mb-3">Admin Tools</h3>
             <Button
               onClick={() => navigate("/admin/users")}
               variant="outline"
@@ -200,7 +212,7 @@ export default function Profile() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
         >
           <Button
             onClick={handleSignOut}
@@ -217,7 +229,7 @@ export default function Profile() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.6 }}
           >
             <Button
               onClick={installApp}

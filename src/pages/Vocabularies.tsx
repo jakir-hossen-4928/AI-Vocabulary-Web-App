@@ -4,9 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VocabCard } from "@/components/VocabCard";
-import { Plus, Search, Filter, X, RefreshCw } from "lucide-react";
+import { Plus, Search, Filter, X, RefreshCw, Globe } from "lucide-react";
 import { useVocabularies, useVocabularyMutations } from "@/hooks/useVocabularies";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { searchDictionaryAPI, convertDictionaryToVocabulary } from "@/services/dictionaryApiService";
 import {
   Sheet,
   SheetContent,
@@ -52,6 +53,10 @@ export default function Vocabularies() {
   const [filteredVocabs, setFilteredVocabs] = useState<Vocabulary[]>([]);
   const [isWorkerFiltering, setIsWorkerFiltering] = useState(false);
   const workerRef = useRef<Worker | null>(null);
+
+  // Online dictionary state
+  const [onlineResults, setOnlineResults] = useState<Vocabulary[]>([]);
+  const [isSearchingOnline, setIsSearchingOnline] = useState(false);
 
   // Chat State
   const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
@@ -145,6 +150,41 @@ export default function Vocabularies() {
     }
   }, [vocabularies, debouncedSearch, selectedPos, sortOrder, showFavorites, favorites]);
 
+  // Search online dictionary when no local results
+  useEffect(() => {
+    const searchOnline = async () => {
+      // Only search if there's a search query and no filters active
+      if (!debouncedSearch.trim() || selectedPos !== "all" || showFavorites || isLoading) {
+        setOnlineResults([]);
+        return;
+      }
+
+      // Check if we have local results
+      if (filteredVocabs.length === 0 && !isWorkerFiltering) {
+        setIsSearchingOnline(true);
+        try {
+          const result = await searchDictionaryAPI(debouncedSearch);
+          if (result) {
+            const vocab = convertDictionaryToVocabulary(result, `online-${Date.now()}`);
+            setOnlineResults([vocab]);
+            console.log('[Vocabularies] Found online dictionary result:', vocab.english);
+          } else {
+            setOnlineResults([]);
+          }
+        } catch (error) {
+          console.error('[Vocabularies] Online dictionary search failed:', error);
+          setOnlineResults([]);
+        } finally {
+          setIsSearchingOnline(false);
+        }
+      } else {
+        setOnlineResults([]);
+      }
+    };
+
+    searchOnline();
+  }, [debouncedSearch, filteredVocabs.length, isWorkerFiltering, selectedPos, showFavorites, isLoading]);
+
   // Sync filters with URL
   useEffect(() => {
     const params = new URLSearchParams(searchParams);
@@ -171,6 +211,7 @@ export default function Vocabularies() {
     setSortOrder("newest");
     setShowFavorites(false);
     setSearchQuery("");
+    setOnlineResults([]);
   };
 
   const handleDelete = async (id: string) => {
@@ -185,9 +226,17 @@ export default function Vocabularies() {
     const vocab = vocabularies.find(v => v.id === id);
     if (!vocab) return;
 
-    setChatVocab(vocab);
-    setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
-    setIsChatOpen(true);
+    if (window.innerWidth < 768) {
+      navigate(`/chat/${id}`, {
+        state: {
+          initialPrompt: `The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`
+        }
+      });
+    } else {
+      setChatVocab(vocab);
+      setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
+      setIsChatOpen(true);
+    }
   };
 
   const handleRefresh = async () => {
@@ -213,7 +262,13 @@ export default function Vocabularies() {
             <div className="flex-1 min-w-0">
               <h1 className="text-lg sm:text-2xl font-bold mb-0.5 sm:mb-1 truncate">Vocabularies</h1>
               <p className="text-primary-foreground/80 text-xs sm:text-sm">
-                {filteredVocabs.length} words found
+                {filteredVocabs.length + onlineResults.length} words found
+                {onlineResults.length > 0 && (
+                  <span className="ml-2 inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-full text-[10px] sm:text-xs">
+                    <Globe className="h-3 w-3" />
+                    {onlineResults.length} online
+                  </span>
+                )}
               </p>
             </div>
             <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
@@ -391,12 +446,17 @@ export default function Vocabularies() {
             <LoadingSpinner />
             <p className="text-sm text-muted-foreground">Loading vocabularies...</p>
           </div>
-        ) : isWorkerFiltering && filteredVocabs.length === 0 ? (
+        ) : isWorkerFiltering && filteredVocabs.length === 0 && onlineResults.length === 0 ? (
           <div className="py-12 flex flex-col items-center justify-center gap-3">
             <LoadingSpinner />
             <p className="text-sm text-muted-foreground">Searching...</p>
           </div>
-        ) : filteredVocabs.length === 0 ? (
+        ) : isSearchingOnline ? (
+          <div className="py-12 flex flex-col items-center justify-center gap-3">
+            <LoadingSpinner />
+            <p className="text-sm text-muted-foreground">Searching online dictionary...</p>
+          </div>
+        ) : filteredVocabs.length === 0 && onlineResults.length === 0 ? (
           <div className="text-center py-8 sm:py-12 px-4">
             <div className="bg-muted/50 rounded-full h-12 w-12 sm:h-16 sm:w-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <Search className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
@@ -410,43 +470,72 @@ export default function Vocabularies() {
             </Button>
           </div>
         ) : (
-          <div
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-              const vocab = filteredVocabs[virtualItem.index];
-              return (
-                <div
-                  key={virtualItem.key}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualItem.size}px`,
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}
-                  className="px-3 sm:px-4 py-3"
-                >
-                  <VocabCard
-                    vocab={vocab}
-                    index={virtualItem.index}
-                    isFavorite={favorites.includes(vocab.id)}
-                    onToggleFavorite={toggleFavorite}
-                    onClick={() => navigate(`/vocabularies/${vocab.id}`)}
-                    onDelete={handleDelete}
-                    onImproveMeaning={handleImproveMeaning}
-                    isAdmin={isAdmin}
-                    className="h-full"
-                  />
+          <>
+            {/* Local Results */}
+            {filteredVocabs.length > 0 && (
+              <div
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  width: '100%',
+                  position: 'relative',
+                }}
+              >
+                {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                  const vocab = filteredVocabs[virtualItem.index];
+                  return (
+                    <div
+                      key={virtualItem.key}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: `${virtualItem.size}px`,
+                        transform: `translateY(${virtualItem.start}px)`,
+                      }}
+                      className="px-3 sm:px-4 py-3"
+                    >
+                      <VocabCard
+                        vocab={vocab}
+                        index={virtualItem.index}
+                        isFavorite={favorites.includes(vocab.id)}
+                        onToggleFavorite={toggleFavorite}
+                        onClick={() => navigate(`/vocabularies/${vocab.id}`)}
+                        onDelete={handleDelete}
+                        onImproveMeaning={handleImproveMeaning}
+                        isAdmin={isAdmin}
+                        className="h-full"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Online Results */}
+            {onlineResults.length > 0 && (
+              <div className="px-3 sm:px-4 py-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold text-muted-foreground">Online Dictionary Results</h3>
                 </div>
-              );
-            })}
-          </div>
+                {onlineResults.map((vocab, index) => (
+                  <div key={vocab.id} className="mb-3">
+                    <VocabCard
+                      vocab={vocab}
+                      index={index}
+                      isFavorite={false}
+                      onToggleFavorite={() => { }}
+                      onClick={() => { }} // Don't navigate for online results
+                      onImproveMeaning={() => { }}
+                      isAdmin={false}
+                      className="h-full"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
       <WordChatModal

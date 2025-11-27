@@ -1,4 +1,4 @@
-import { Home, BookOpen, GraduationCap, User, Heart, Globe, Shield, Users, LogOut, BarChart } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, Shield, Users, LogOut, BarChart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "firebase/auth";
@@ -10,7 +10,7 @@ const navItems = [
     { path: "/", icon: Home, label: "Home" },
     { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
     { path: "/resources", icon: GraduationCap, label: "Resources" },
-    { path: "/favorites", icon: Heart, label: "Favorites" },
+    { path: "/ai-activity", icon: Activity, label: "AI Activity" },
     { path: "/profile", icon: User, label: "Profile" },
 ];
 
@@ -37,6 +37,21 @@ export const Sidebar = () => {
                         <span>{item.label}</span>
                     </NavLink>
                 ))}
+
+                {/* Settings Section */}
+                <div className="pt-4 pb-2 px-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Settings
+                    </p>
+                </div>
+                <NavLink
+                    to="/api-key-setup"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                    activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                    <Shield className="h-5 w-5" />
+                    <span>OpenAI API Setup</span>
+                </NavLink>
 
                 {isAdmin && (
                     <>

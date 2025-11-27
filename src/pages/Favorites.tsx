@@ -55,9 +55,17 @@ export default function Favorites() {
     const vocab = vocabularies.find(v => v.id === id);
     if (!vocab) return;
 
-    setChatVocab(vocab);
-    setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
-    setIsChatOpen(true);
+    if (window.innerWidth < 768) {
+      navigate(`/chat/${id}`, {
+        state: {
+          initialPrompt: `The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`
+        }
+      });
+    } else {
+      setChatVocab(vocab);
+      setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
+      setIsChatOpen(true);
+    }
   };
 
   const handleExport = async () => {

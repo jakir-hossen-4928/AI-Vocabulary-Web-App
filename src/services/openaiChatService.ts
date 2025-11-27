@@ -57,7 +57,7 @@ export const chatWithVocabulary = async (
         throw new Error("Rate limit exceeded. Please wait a moment before sending another message.");
     }
 
-    const userApiKey = apiKey || getOpenAIApiKey();
+    const userApiKey = (apiKey || getOpenAIApiKey())?.trim();
     const selectedModel = modelId || getSelectedModel() || DEFAULT_MODEL;
 
     if (!userApiKey) {
@@ -126,8 +126,12 @@ RESPONSE RULES:
         ...sanitizedMessages
     ];
 
+    // Use proxy in development to avoid CORS, direct URL in production
+    const isDev = import.meta.env.DEV;
+    const baseUrl = isDev ? "/api/openai" : "https://api.openai.com/v1";
+
     try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        const response = await fetch(`${baseUrl}/chat/completions`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${userApiKey}`,
@@ -149,11 +153,14 @@ RESPONSE RULES:
 
             // Security: Generic error messages for users
             if (response.status === 401) {
-                throw new Error("Invalid API key. Please check your OpenAI API key in Profile settings.");
+                const specificError = errorData?.error?.message || "Invalid API key.";
+                console.error("OpenAI 401 Error:", specificError);
+                throw new Error(`OpenAI Error: ${specificError} Please check your API key in Profile settings.`);
             } else if (response.status === 429) {
                 throw new Error("Rate limit exceeded. Please wait a moment and try again.");
             } else if (response.status === 400) {
-                throw new Error("Invalid request. Please try again.");
+                const specificError = errorData?.error?.message || "Invalid request.";
+                throw new Error(`Invalid request: ${specificError}`);
             } else if (response.status === 403) {
                 throw new Error("Access denied. Please check your API key permissions.");
             }

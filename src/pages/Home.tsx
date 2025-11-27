@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Sparkles, Zap, Loader2, X } from "lucide-react";
+import { Search, Sparkles, Zap, Loader2, X, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVocabularies } from "@/hooks/useVocabularies";
 import { VocabCard } from "@/components/VocabCard";
@@ -10,6 +11,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/useDebounce";
 import { WordChatModal } from "@/components/WordChatModal";
 import { Vocabulary } from "@/types/vocabulary";
+import { searchDictionaryAPI, convertDictionaryToVocabulary } from "@/services/dictionaryApiService";
+import { toast } from "sonner";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,6 +23,10 @@ export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<string[]>([]);
+
+  // Online dictionary state
+  const [onlineResults, setOnlineResults] = useState<Vocabulary[]>([]);
+  const [isSearchingOnline, setIsSearchingOnline] = useState(false);
 
   // Chat State
   const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
@@ -51,6 +58,47 @@ export default function Home() {
     setSearchParams(params, { replace: true });
   }, [debouncedSearch, setSearchParams]);
 
+  // Search online dictionary when no local results
+  useEffect(() => {
+    const searchOnline = async () => {
+      if (!debouncedSearch.trim() || isLoading) {
+        setOnlineResults([]);
+        return;
+      }
+
+      // Check if we have local results
+      const localResults = vocabularies.filter(v =>
+        v.bangla.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        v.english.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        v.partOfSpeech.toLowerCase().includes(debouncedSearch.toLowerCase())
+      );
+
+      // Only search online if no local results
+      if (localResults.length === 0) {
+        setIsSearchingOnline(true);
+        try {
+          const result = await searchDictionaryAPI(debouncedSearch);
+          if (result) {
+            const vocab = convertDictionaryToVocabulary(result, `online-${Date.now()}`);
+            setOnlineResults([vocab]);
+            console.log('[Home] Found online dictionary result:', vocab.english);
+          } else {
+            setOnlineResults([]);
+          }
+        } catch (error) {
+          console.error('[Home] Online dictionary search failed:', error);
+          setOnlineResults([]);
+        } finally {
+          setIsSearchingOnline(false);
+        }
+      } else {
+        setOnlineResults([]);
+      }
+    };
+
+    searchOnline();
+  }, [debouncedSearch, isLoading, data]);
+
   const toggleFavorite = useCallback((id: string) => {
     setFavorites(prev => {
       const newFavorites = prev.includes(id)
@@ -65,6 +113,7 @@ export default function Home() {
 
   const clearSearch = () => {
     setSearchQuery("");
+    setOnlineResults([]);
   };
 
   const vocabularies = [...(data || [])].sort((a, b) => {
@@ -89,6 +138,10 @@ export default function Home() {
       v.partOfSpeech.toLowerCase().includes(debouncedSearch.toLowerCase())
     )
     : vocabularies.slice(0, 8);
+
+  // Combine local and online results
+  const allResults = [...filteredVocabs, ...onlineResults];
+  const hasResults = allResults.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -169,15 +222,18 @@ export default function Home() {
       {/* Search Results or Recent Vocabularies */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 min-h-[400px]">
         <AnimatePresence mode="wait">
-          {isLoading ? (
+          {isLoading || isSearchingOnline ? (
             <motion.div
               key="loading"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex justify-center py-8"
+              className="flex flex-col items-center justify-center py-8 gap-2"
             >
               <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              {isSearchingOnline && (
+                <p className="text-sm text-muted-foreground">Searching online dictionary...</p>
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -189,7 +245,19 @@ export default function Home() {
             >
               <div className="flex items-center justify-between px-4 sm:px-0">
                 <h2 className="text-lg sm:text-xl font-bold">
-                  {searchQuery.trim() ? `Search Results (${filteredVocabs.length})` : "Recent Vocabularies"}
+                  {searchQuery.trim() ? (
+                    <>
+                      Search Results ({allResults.length})
+                      {onlineResults.length > 0 && (
+                        <Badge variant="secondary" className="ml-2">
+                          <Globe className="h-3 w-3 mr-1" />
+                          Online
+                        </Badge>
+                      )}
+                    </>
+                  ) : (
+                    "Recent Vocabularies"
+                  )}
                 </h2>
                 {searchQuery.trim() && (
                   <button
@@ -201,16 +269,21 @@ export default function Home() {
                 )}
               </div>
 
-              {filteredVocabs.length > 0 ? (
+              {hasResults ? (
                 <div className="grid gap-3 px-4 sm:px-0">
-                  {filteredVocabs.map((vocab, index) => (
+                  {allResults.map((vocab, index) => (
                     <VocabCard
                       key={vocab.id}
                       vocab={vocab}
                       index={index}
                       isFavorite={favorites.includes(vocab.id)}
                       onToggleFavorite={toggleFavorite}
-                      onClick={() => navigate(`/vocabularies/${vocab.id}`)}
+                      onClick={() => {
+                        // Don't navigate for online results
+                        if (!vocab.isOnline) {
+                          navigate(`/vocabularies/${vocab.id}`);
+                        }
+                      }}
                       onImproveMeaning={handleImproveMeaning}
                     />
                   ))}

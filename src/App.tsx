@@ -38,6 +38,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 import { Layout } from "@/components/Layout";
 import { LandingLayout } from "@/components/LandingLayout";
 import LandingPage from "./pages/LandingPage";
+import WordChatPage from "./pages/WordChatPage";
+import OnlineDictionary from "./pages/OnlineDictionary";
+import AIActivity from "./pages/AIActivity";
+import APIKeySetup from "./pages/APIKeySetup";
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -63,6 +67,10 @@ const AppRoutes = () => {
         <Route path="/vocabularies/:id" element={<ProtectedRoute><VocabularyDetail /></ProtectedRoute>} />
         <Route path="/resources" element={<ProtectedRoute><ResourcesGallery /></ProtectedRoute>} />
         <Route path="/resources/:id" element={<ProtectedRoute><ResourceDetail /></ProtectedRoute>} />
+        <Route path="/chat/:id" element={<ProtectedRoute><WordChatPage /></ProtectedRoute>} />
+        <Route path="/dictionary" element={<ProtectedRoute><OnlineDictionary /></ProtectedRoute>} />
+        <Route path="/ai-activity" element={<ProtectedRoute><AIActivity /></ProtectedRoute>} />
+        <Route path="/api-key-setup" element={<ProtectedRoute><APIKeySetup /></ProtectedRoute>} />
 
         {/* Redirects from old grammar routes to new resources routes */}
         <Route path="/grammar" element={<Navigate to="/resources" replace />} />

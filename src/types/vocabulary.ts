@@ -13,9 +13,14 @@ export interface Vocabulary {
   synonyms: string[];
   antonyms: string[];
   explanation: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | number;
+  updatedAt: string | number;
   userId: string;
+  // Optional fields for online dictionary results
+  origin?: string;
+  audioUrl?: string;
+  isFromAPI?: boolean;
+  isOnline?: boolean;
 }
 
 export type PartOfSpeech =
