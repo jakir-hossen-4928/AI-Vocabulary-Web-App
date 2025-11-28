@@ -13,6 +13,7 @@ import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { motion } from "framer-motion";
 import { getTotalSpending } from "@/lib/apiKeyStorage";
 import { formatCost } from "@/lib/openaiConfig";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 export default function Profile() {
   const { user, isAdmin, loading } = useAuth();
@@ -178,6 +179,17 @@ export default function Profile() {
 
             </div>
           </Card>
+        </motion.div>
+
+        {/* Notification Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38 }}
+          className="mb-6"
+        >
+          <h3 className="text-lg font-semibold mb-3">Notifications</h3>
+          <NotificationSettings />
         </motion.div>
 
         {/* Admin Actions */}
