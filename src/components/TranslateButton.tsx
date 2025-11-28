@@ -26,22 +26,31 @@ const TranslateButton: React.FC<TranslateButtonProps> = ({ text, className = "" 
 
         setIsTranslating(true);
 
+        const GOOGLE_API = import.meta.env.VITE_GOOGLE_TRANSLATION_API;
+
         try {
             const response = await fetch(
-                `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=bn&dt=t&q=${encodeURIComponent(text)}`
+                GOOGLE_API + encodeURIComponent(text)
             );
+
             const data = await response.json();
-            // data[0] is an array of sentences. We need to join them if there are multiple.
-            const translation = data[0].map((item: any) => item[0]).join('');
+
+            const translation = data[0]
+                .map((item: any) => item[0])
+                .join('');
+
             setTranslatedText(translation);
             setShowTranslation(true);
+
         } catch (error) {
             console.error('Translation error:', error);
             setTranslatedText('Translation failed. Please try again.');
             setShowTranslation(true);
+
         } finally {
             setIsTranslating(false);
         }
+
     };
 
     return (

@@ -51,8 +51,9 @@ export function calculateCost(inputTokens: number, outputTokens: number, modelId
 
 // Format cost in dollars
 export function formatCost(cost: number): string {
+    if (cost === 0) return "$0.00";
     if (cost < 0.01) {
-        return `$${(cost * 1000).toFixed(4)}k`; // Show in thousandths
+        return `$${cost.toFixed(6)}`;
     }
     return `$${cost.toFixed(4)}`;
 }

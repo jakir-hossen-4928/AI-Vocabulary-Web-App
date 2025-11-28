@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, TrendingUp, Download, Trash2, Settings } from "lucide-react";
 import { getAllTokenUsage, clearAllData } from "@/lib/apiKeyStorage";
-import { getModelById } from "@/lib/openaiConfig";
+import { getModelById, formatCost } from "@/lib/openaiConfig";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -199,6 +199,7 @@ export default function AIActivity() {
                                                 </p>
                                             </div>
                                             <div className="text-right">
+                                                <p className="font-medium text-green-600">{formatCost(record.cost)}</p>
                                                 <p className="text-xs text-muted-foreground">{record.totalTokens.toLocaleString()} tokens</p>
                                             </div>
                                         </div>
