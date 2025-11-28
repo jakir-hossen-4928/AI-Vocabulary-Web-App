@@ -1,6 +1,6 @@
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield, Layers, Upload } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield, Layers, Upload, Heart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "firebase/auth";
@@ -12,6 +12,7 @@ const navItems = [
     { path: "/home", icon: Home, label: "Home" },
     { path: "/dictionary", icon: Globe, label: "Online Dictionary" },
     { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
+    { path: "/favorites", icon: Heart, label: "Favorites" },
     { path: "/flashcards", icon: Layers, label: "Flashcards" },
     { path: "/ai-activity", icon: Activity, label: "AI Activity" },
 ];
