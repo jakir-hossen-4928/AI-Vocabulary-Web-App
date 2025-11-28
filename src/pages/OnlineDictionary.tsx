@@ -95,23 +95,8 @@ export default function OnlineDictionary() {
         <div className="min-h-screen bg-background flex flex-col pb-20">
             {/* Header */}
             <header className="sticky top-0 z-50 bg-gradient-to-r from-primary to-blue-600 text-white shadow-lg">
-                <div className="flex items-center gap-3 p-4">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => navigate(-1)}
-                        className="shrink-0 text-white hover:bg-white/20"
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <div className="flex-1">
-                        <h1 className="text-lg font-bold">IELTS Dictionary</h1>
-                        <p className="text-xs text-white/80">English Learner's Dictionary</p>
-                    </div>
-                </div>
-
                 {/* Search Bar */}
-                <div className="px-4 pb-4">
+                <div className="p-4">
                     <form onSubmit={handleSearch} className="flex gap-2">
                         <Input
                             value={searchQuery}

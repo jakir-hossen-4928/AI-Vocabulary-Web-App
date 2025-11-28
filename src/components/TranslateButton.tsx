@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './TranslateButton.css';
-import { Loader2 } from "lucide-react";
+import { Loader2, Languages } from "lucide-react";
 
 interface TranslateButtonProps {
     text: string;
@@ -56,8 +56,9 @@ const TranslateButton: React.FC<TranslateButtonProps> = ({ text, className = "" 
                     <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
                     <>
+                        <Languages className="h-3 w-3" />
                         <span className="flag-icon">🇧🇩</span>
-                        <span className="btn-label">অনুবাদ</span>
+
                     </>
                 )}
             </button>
