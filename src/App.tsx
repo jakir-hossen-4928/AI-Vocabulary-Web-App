@@ -42,6 +42,7 @@ import WordChatPage from "./pages/WordChatPage";
 import OnlineDictionary from "./pages/OnlineDictionary";
 import AIActivity from "./pages/AIActivity";
 import APIKeySetup from "./pages/APIKeySetup";
+import Flashcards from "./pages/Flashcards";
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -70,6 +71,7 @@ const AppRoutes = () => {
         <Route path="/chat/:id" element={<ProtectedRoute><WordChatPage /></ProtectedRoute>} />
         <Route path="/dictionary" element={<ProtectedRoute><OnlineDictionary /></ProtectedRoute>} />
         <Route path="/ai-activity" element={<ProtectedRoute><AIActivity /></ProtectedRoute>} />
+        <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />
         <Route path="/api-key-setup" element={<ProtectedRoute><APIKeySetup /></ProtectedRoute>} />
 
         {/* Redirects from old grammar routes to new resources routes */}

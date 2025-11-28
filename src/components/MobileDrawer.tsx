@@ -1,6 +1,6 @@
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield, Layers, Upload } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "firebase/auth";
@@ -12,6 +12,7 @@ const navItems = [
     { path: "/home", icon: Home, label: "Home" },
     { path: "/dictionary", icon: Globe, label: "Online Dictionary" },
     { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
+    { path: "/flashcards", icon: Layers, label: "Flashcards" },
     { path: "/ai-activity", icon: Activity, label: "AI Activity" },
 ];
 
@@ -148,6 +149,15 @@ export const MobileDrawer = ({ open, onOpenChange }: MobileDrawerProps) => {
                             >
                                 <Shield className="h-5 w-5" />
                                 <span>Duplicate Manager</span>
+                            </NavLink>
+                            <NavLink
+                                to="/vocabularies/bulk-add"
+                                onClick={() => onOpenChange(false)}
+                                className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                                activeClassName="bg-primary/10 text-primary font-medium"
+                            >
+                                <Upload className="h-5 w-5" />
+                                <span>Bulk Upload</span>
                             </NavLink>
                         </>
                     )}

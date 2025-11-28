@@ -1,4 +1,4 @@
-import { Home, BookOpen, GraduationCap, User, Activity, Globe, Shield, Users, LogOut, BarChart } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, Shield, Users, LogOut, BarChart, Layers, Upload } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "firebase/auth";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 const navItems = [
     { path: "/", icon: Home, label: "Home" },
     { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
+    { path: "/flashcards", icon: Layers, label: "Flashcards" },
     { path: "/dictionary", icon: Globe, label: "Dictionary" },
     { path: "/resources", icon: GraduationCap, label: "Resources" },
     { path: "/ai-activity", icon: Activity, label: "AI Activity" },
@@ -76,6 +77,14 @@ export const Sidebar = () => {
                         >
                             <Shield className="h-5 w-5" />
                             <span>Duplicate Manager</span>
+                        </NavLink>
+                        <NavLink
+                            to="/vocabularies/bulk-add"
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                            activeClassName="bg-primary/10 text-primary font-medium"
+                        >
+                            <Upload className="h-5 w-5" />
+                            <span>Bulk Upload</span>
                         </NavLink>
                     </>
                 )}
