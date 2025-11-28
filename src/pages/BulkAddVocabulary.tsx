@@ -65,7 +65,7 @@ Generate advanced academic vocabulary words suitable for IELTS Writing Task 2 at
 Each vocabulary entry must include:
 - English word
 - Bangla translation with native-like translation
-- Part of speech
+- Part of speech(Noun,Verb,Adjective,Adverb,Preposition,Conjunction,Pronoun,Interjection,Phrase,Phrase,Idiom,Phrasal Verb,Phrasal Verb,Linking Phrase)
 - Pronunciation guide in both English phonetics and Bangla
 - Clear and comprehensive explanation
 - At least 5 synonyms
