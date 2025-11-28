@@ -9,6 +9,7 @@ import { toast } from "sonner";
 const navItems = [
     { path: "/", icon: Home, label: "Home" },
     { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
+    { path: "/dictionary", icon: Globe, label: "Dictionary" },
     { path: "/resources", icon: GraduationCap, label: "Resources" },
     { path: "/ai-activity", icon: Activity, label: "AI Activity" },
     { path: "/profile", icon: User, label: "Profile" },

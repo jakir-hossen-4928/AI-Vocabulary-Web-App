@@ -1,9 +1,10 @@
-import { Home, BookOpen, GraduationCap, User } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Globe } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
+  { path: "/dictionary", icon: Globe, label: "Dictionary" },
   { path: "/resources", icon: GraduationCap, label: "Resources" },
   { path: "/profile", icon: User, label: "Profile" },
 ];

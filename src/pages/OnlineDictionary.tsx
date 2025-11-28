@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import TranslateButton from "@/components/TranslateButton";
 
 interface Phonetic {
     text: string;
@@ -157,31 +158,36 @@ export default function OnlineDictionary() {
                         <Card className="overflow-hidden">
                             <div className="bg-gradient-to-r from-primary/10 to-blue-50 dark:from-primary/5 dark:to-blue-950/20 p-6 border-b">
                                 <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                        <h2 className="text-3xl font-bold text-primary mb-2">
-                                            {result.word}
-                                        </h2>
+                                    <div className="flex flex-col gap-2 w-full">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h2 className="text-3xl font-bold text-primary mb-2">
+                                                {result.word}
+                                            </h2>
+                                            <TranslateButton text={`${result.word}: ${result.meanings[0]?.definitions[0]?.definition || ''}`} />
+                                        </div>
                                         {result.phonetic && (
                                             <p className="text-lg text-muted-foreground font-mono">
                                                 /{result.phonetic}/
                                             </p>
                                         )}
                                     </div>
-                                    {result.phonetics.find(p => p.audio) && (
-                                        <Button
-                                            size="lg"
-                                            variant="secondary"
-                                            className="shrink-0"
-                                            onClick={() => {
-                                                const audioPhonetic = result.phonetics.find(p => p.audio);
-                                                if (audioPhonetic?.audio) {
-                                                    playAudio(audioPhonetic.audio);
-                                                }
-                                            }}
-                                        >
-                                            <Volume2 className="h-5 w-5" />
-                                        </Button>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        {result.phonetics.find(p => p.audio) && (
+                                            <Button
+                                                size="lg"
+                                                variant="secondary"
+                                                className="shrink-0"
+                                                onClick={() => {
+                                                    const audioPhonetic = result.phonetics.find(p => p.audio);
+                                                    if (audioPhonetic?.audio) {
+                                                        playAudio(audioPhonetic.audio);
+                                                    }
+                                                }}
+                                            >
+                                                <Volume2 className="h-5 w-5" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* All Phonetics */}
@@ -231,15 +237,17 @@ export default function OnlineDictionary() {
                                 <div className="space-y-4">
                                     {meaning.definitions.map((def, defIdx) => (
                                         <div key={defIdx} className="pl-4 border-l-2 border-primary/20">
-                                            <p className="font-medium leading-relaxed mb-2">
-                                                {defIdx + 1}. {def.definition}
-                                            </p>
+                                            <div className="font-medium leading-relaxed mb-2">
+                                                <span className="mr-2">{defIdx + 1}. {def.definition}</span>
+                                                <TranslateButton text={def.definition} className="inline-block align-middle" />
+                                            </div>
 
                                             {def.example && (
                                                 <div className="mt-2 p-3 bg-muted/50 rounded-lg border-l-2 border-blue-500">
-                                                    <p className="text-sm italic text-muted-foreground">
+                                                    <div className="text-sm italic text-muted-foreground">
                                                         "{def.example}"
-                                                    </p>
+                                                        <TranslateButton text={def.example} className="ml-2 inline-block align-middle scale-90" />
+                                                    </div>
                                                 </div>
                                             )}
 
