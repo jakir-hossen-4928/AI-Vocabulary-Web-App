@@ -19,6 +19,21 @@ interface VocabCardProps {
   className?: string;
 }
 
+// Helper function to determine text size based on length
+const getBanglaTextSize = (text: string) => {
+  const length = text.length;
+  if (length > 50) return "text-sm sm:text-base md:text-lg";
+  if (length > 30) return "text-base sm:text-lg md:text-xl";
+  return "text-base sm:text-xl md:text-2xl";
+};
+
+const getEnglishTextSize = (text: string) => {
+  const length = text.length;
+  if (length > 50) return "text-xs sm:text-sm md:text-base";
+  if (length > 30) return "text-sm sm:text-base md:text-lg";
+  return "text-sm sm:text-lg md:text-xl";
+};
+
 export const VocabCard = memo(({
   vocab,
   isFavorite,
@@ -63,7 +78,8 @@ export const VocabCard = memo(({
     }
   };
 
-
+  const banglaTextSize = getBanglaTextSize(vocab.bangla);
+  const englishTextSize = getEnglishTextSize(vocab.english);
 
   return (
     <div
@@ -71,18 +87,20 @@ export const VocabCard = memo(({
       className={className}
     >
       <Card
-        className="p-3 sm:p-4 cursor-pointer hover:shadow-hover transition-all duration-300 bg-vocab-card hover:bg-vocab-card-hover h-full flex flex-col justify-between"
+        className="p-3 sm:p-4 md:p-5 cursor-pointer hover:shadow-hover transition-all duration-300 bg-vocab-card hover:bg-vocab-card-hover h-full flex flex-col justify-between"
         onClick={onClick}
       >
         <div className="flex justify-between items-start mb-2 sm:mb-3 gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
-              <h3 className="text-base sm:text-xl font-bold text-foreground break-words">{vocab.bangla}</h3>
+          <div className="flex-1 min-w-0 pr-1">
+            <div className="flex items-start sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
+              <h3 className={`${banglaTextSize} font-bold text-foreground break-words leading-tight`}>
+                {vocab.bangla}
+              </h3>
               {onImproveMeaning && !vocab.isOnline && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 sm:h-6 sm:w-6 -ml-1 text-muted-foreground"
+                  className="h-5 w-5 sm:h-6 sm:w-6 -ml-0.5 text-muted-foreground flex-shrink-0"
                   onClick={handleImprove}
                   disabled={isImproving}
                   title="Chat with AI for improved meaning"
@@ -94,19 +112,26 @@ export const VocabCard = memo(({
                   )}
                 </Button>
               )}
-              <Badge variant="secondary" className="text-[10px] sm:text-xs flex-shrink-0">
+              <Badge variant="secondary" className="text-[9px] sm:text-[10px] md:text-xs flex-shrink-0 px-1.5 sm:px-2 py-0.5">
                 {vocab.partOfSpeech}
               </Badge>
             </div>
-            <p className="text-sm sm:text-lg text-primary font-medium break-words">{vocab.english}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 break-words">{vocab.pronunciation}</p>
+            <p className={`${englishTextSize} text-primary font-medium break-words leading-snug`}>
+              {vocab.english}
+            </p>
+            {vocab.pronunciation && (
+              <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5 sm:mt-1 break-words leading-tight">
+                {vocab.pronunciation}
+              </p>
+            )}
           </div>
-          <div className="flex gap-0.5 sm:gap-1 flex-shrink-0">
+          <div className="flex gap-0.5 sm:gap-1 flex-shrink-0 flex-col sm:flex-row">
             <Button
               variant="ghost"
               size="icon"
               onClick={handleSpeak}
               className="h-7 w-7 sm:h-8 sm:w-8"
+              title="Speak"
             >
               <Volume2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
@@ -116,6 +141,7 @@ export const VocabCard = memo(({
                 size="icon"
                 onClick={handleFavoriteClick}
                 className="h-7 w-7 sm:h-8 sm:w-8"
+                title={isFavorite ? "Remove from favorites" : "Add to favorites"}
               >
                 <Heart
                   className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isFavorite ? "fill-destructive text-destructive" : ""}`}
@@ -128,6 +154,7 @@ export const VocabCard = memo(({
                 size="icon"
                 onClick={handleDelete}
                 className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                title="Delete"
               >
                 <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
@@ -136,7 +163,7 @@ export const VocabCard = memo(({
         </div>
 
         {vocab.explanation && (
-          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 break-words mt-auto">
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground line-clamp-2 break-words mt-auto leading-relaxed">
             {vocab.explanation}
           </p>
         )}

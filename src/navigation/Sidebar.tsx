@@ -41,7 +41,10 @@ export const Sidebar = () => {
         >
             <div className="p-6 flex items-center justify-between">
                 {!isCollapsed && (
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                    <h1
+                        onClick={() => navigate("/")}
+                        className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+                    >
                         Ai Vocab
                     </h1>
                 )}

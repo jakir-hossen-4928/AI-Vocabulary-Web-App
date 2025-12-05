@@ -46,7 +46,13 @@ export const MobileDrawer = ({ open, onOpenChange }: MobileDrawerProps) => {
             >
                 {/* Header */}
                 <div className="p-6 border-b bg-gradient-to-br from-primary/10 to-blue-50 dark:from-primary/5 dark:to-blue-950/20">
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                    <h1
+                        onClick={() => {
+                            navigate("/");
+                            onOpenChange(false);
+                        }}
+                        className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+                    >
                         Ai Vocab
                     </h1>
                     <p className="text-xs text-muted-foreground mt-1">Learn English Vocabulary</p>

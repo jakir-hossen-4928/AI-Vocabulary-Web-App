@@ -196,21 +196,11 @@ export default function Home() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() => setIsSearchFocused(false)}
-                  className="w-full pl-12 pr-24 h-12 sm:h-14 text-base border-0 bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/70"
-                />
-                {/* Voice Search Button */}
-                <button
-                  onClick={startListening}
-                  disabled={isListening}
-                  className={`absolute right-12 p-2 rounded-full transition-all ${isListening
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'hover:bg-slate-100 text-muted-foreground'
+                  className={`w-full pl-12 h-12 sm:h-14 text-base border-0 bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/70 ${searchQuery ? 'pr-20 sm:pr-24' : 'pr-12 sm:pr-14'
                     }`}
-                  aria-label="Voice search"
-                  title="Voice search (English or Bangla)"
-                >
-                  <Mic className="h-5 w-5" />
-                </button>
+                />
+
+                {/* Clear Button - Shows when there's text, positioned before voice icon */}
                 <AnimatePresence>
                   {searchQuery && (
                     <motion.button
@@ -218,13 +208,27 @@ export default function Home() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       onClick={clearSearch}
-                      className="absolute right-3 p-1.5 rounded-full hover:bg-slate-100 text-muted-foreground transition-colors"
+                      className="absolute right-12 sm:right-14 p-1.5 rounded-full hover:bg-slate-100 text-muted-foreground transition-colors z-10"
                       aria-label="Clear search"
                     >
-                      <X className="h-5 w-5" />
+                      <X className="h-4 w-4 sm:h-5 sm:w-5" />
                     </motion.button>
                   )}
                 </AnimatePresence>
+
+                {/* Voice Search Button - Always at the end */}
+                <button
+                  onClick={startListening}
+                  disabled={isListening}
+                  className={`absolute right-2 sm:right-3 p-2 rounded-full transition-all ${isListening
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'hover:bg-slate-100 text-muted-foreground'
+                    }`}
+                  aria-label="Voice search"
+                  title="Voice search (English or Bangla)"
+                >
+                  <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
               </div>
             </div>
           </motion.div>

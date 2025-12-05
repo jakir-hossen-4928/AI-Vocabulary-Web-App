@@ -348,38 +348,44 @@ export default function Vocabularies() {
           {/* Search and Filter Bar */}
           <div className="flex gap-1.5 sm:gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-4 sm:w-4 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="Search words..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 sm:pl-10 pr-16 sm:pr-20 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus-visible:ring-primary-foreground/30 h-9 sm:h-10 text-sm"
-              />
-              {/* Voice Search Button */}
-              <button
-                onClick={startListening}
-                disabled={isListening}
-                className={`absolute right-10 sm:right-12 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all ${isListening
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'text-primary-foreground/50 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                className={`pl-8 sm:pl-10 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus-visible:ring-primary-foreground/30 h-11 sm:h-12 text-sm ${searchQuery ? 'pr-16 sm:pr-20' : 'pr-11 sm:pr-12'
                   }`}
-                title="Voice search (English or Bangla)"
-              >
-                <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
+              />
+
+              {/* Clear Button - Shows when there's text, positioned before voice icon */}
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-primary-foreground/50 hover:text-primary-foreground"
+                  className="absolute right-10 sm:right-12 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-primary-foreground/10 text-primary-foreground/50 hover:text-primary-foreground transition-colors z-10"
+                  aria-label="Clear search"
                 >
-                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <X className="h-4 w-4 sm:h-4 sm:w-4" />
                 </button>
               )}
+
+              {/* Voice Search Button - Always at the end */}
+              <button
+                onClick={startListening}
+                disabled={isListening}
+                className={`absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-full transition-all z-10 ${isListening
+                  ? 'bg-red-500 text-white animate-pulse shadow-lg'
+                  : 'text-primary-foreground/50 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                  }`}
+                aria-label="Voice search"
+                title="Voice search (English or Bangla)"
+              >
+                <Mic className="h-4 w-4 sm:h-4 sm:w-4" />
+              </button>
             </div>
 
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="secondary" className="bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 border-primary-foreground/20 relative h-9 sm:h-10 w-9 sm:w-10 p-0 flex-shrink-0">
+                <Button variant="secondary" className="bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 border-primary-foreground/20 relative h-11 sm:h-12 w-11 sm:w-12 p-0 flex-shrink-0">
                   <Filter className="h-4 w-4" />
                   {activeFiltersCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 bg-red-500 rounded-full border-2 border-primary text-[10px] sm:text-xs flex items-center justify-center font-bold text-white">{activeFiltersCount}</span>
