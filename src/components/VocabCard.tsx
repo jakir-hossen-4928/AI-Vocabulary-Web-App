@@ -63,8 +63,7 @@ export const VocabCard = memo(({
     }
   };
 
-  // Debug logging
-  console.log(`[VocabCard] ${vocab.english} - isOnline: ${vocab.isOnline}, onImproveMeaning: ${!!onImproveMeaning}`);
+
 
   return (
     <div

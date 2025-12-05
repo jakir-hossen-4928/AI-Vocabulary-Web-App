@@ -458,9 +458,6 @@ export default function ResourcesGallery() {
                         return (
                           <motion.div
                             key={img.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: colIndex * 0.05 }}
                             onClick={() => navigate(`/resources/${img.id}`)}
                           >
                             <Card className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow cursor-pointer group border-0 bg-card/50 backdrop-blur-sm relative">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Sparkles, Zap, Loader2, X, Globe } from "lucide-react";
+import { Search, Sparkles, Zap, Loader2, X, Globe, Mic } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { Vocabulary } from "@/types/vocabulary";
 import { searchDictionaryAPI, convertDictionaryToVocabulary } from "@/services/dictionaryApiService";
 import { toast } from "sonner";
 import { getSelectedModel } from "@/openrouterAi/apiKeyStorage";
+import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,6 +39,12 @@ export default function Home() {
   const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
 
   const [model, setModel] = useState<string | null>(getSelectedModel() || null);
+
+  // Voice search
+  const { isListening, startListening, interimTranscript, detectedLanguage } = useVoiceSearch((transcript) => {
+    setSearchQuery(transcript);
+    setSearchParams({ search: transcript });
+  });
 
   useEffect(() => {
     const savedModel = getSelectedModel();
@@ -189,8 +196,21 @@ export default function Home() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() => setIsSearchFocused(false)}
-                  className="w-full pl-12 pr-12 h-12 sm:h-14 text-base border-0 bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/70"
+                  className="w-full pl-12 pr-24 h-12 sm:h-14 text-base border-0 bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/70"
                 />
+                {/* Voice Search Button */}
+                <button
+                  onClick={startListening}
+                  disabled={isListening}
+                  className={`absolute right-12 p-2 rounded-full transition-all ${isListening
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'hover:bg-slate-100 text-muted-foreground'
+                    }`}
+                  aria-label="Voice search"
+                  title="Voice search (English or Bangla)"
+                >
+                  <Mic className="h-5 w-5" />
+                </button>
                 <AnimatePresence>
                   {searchQuery && (
                     <motion.button

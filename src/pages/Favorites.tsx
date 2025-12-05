@@ -87,8 +87,8 @@ export default function Favorites() {
   const rowVirtualizer = useVirtualizer({
     count: favoriteVocabs.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 200, // Estimated card height
-    overscan: 5,
+    estimateSize: () => 250, // Estimated card height (increased for better spacing)
+    overscan: 3,
   });
 
   return (
@@ -172,7 +172,7 @@ export default function Favorites() {
                       transform: `translateY(${virtualItem.start}px)`,
                     }}
                   >
-                    <div className="pb-3">
+                    <div className="pb-4">
                       <VocabCard
                         vocab={vocab}
                         index={virtualItem.index}

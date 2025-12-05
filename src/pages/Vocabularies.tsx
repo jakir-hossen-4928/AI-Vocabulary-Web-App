@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VocabCard } from "@/components/VocabCard";
-import { Plus, Search, Filter, X, RefreshCw, Globe } from "lucide-react";
+import { Plus, Search, Filter, X, RefreshCw, Globe, Mic } from "lucide-react";
 import { useVocabularies, useVocabularyMutations } from "@/hooks/useVocabularies";
 import { useFavorites } from "@/hooks/useFavorites";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -36,6 +36,7 @@ import { Vocabulary } from "@/types/vocabulary";
 import { WordChatModal } from "@/components/WordChatModal";
 import { toast } from "sonner";
 import { getSelectedModel } from "@/openrouterAi/apiKeyStorage";
+import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 
 export default function Vocabularies() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -70,6 +71,12 @@ export default function Vocabularies() {
   const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
 
   const [model, setModel] = useState<string | null>(getSelectedModel() || null);
+
+  // Voice search
+  const { isListening, startListening } = useVoiceSearch((transcript) => {
+    setSearchQuery(transcript);
+    setSearchParams({ search: transcript });
+  });
 
   const debouncedSearch = useDebounce(searchQuery, 150);
 
@@ -346,8 +353,20 @@ export default function Vocabularies() {
                 placeholder="Search words..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 sm:pl-10 pr-8 sm:pr-10 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus-visible:ring-primary-foreground/30 h-9 sm:h-10 text-sm"
+                className="pl-8 sm:pl-10 pr-16 sm:pr-20 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus-visible:ring-primary-foreground/30 h-9 sm:h-10 text-sm"
               />
+              {/* Voice Search Button */}
+              <button
+                onClick={startListening}
+                disabled={isListening}
+                className={`absolute right-10 sm:right-12 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all ${isListening
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'text-primary-foreground/50 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                  }`}
+                title="Voice search (English or Bangla)"
+              >
+                <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </button>
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
