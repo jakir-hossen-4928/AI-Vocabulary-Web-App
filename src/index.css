@@ -147,3 +147,8 @@ All colors MUST be HSL.
     backface-visibility: hidden;
   }
 }
+
+/* Ensure SweetAlert2 is always on top of Radix UI Dialogs (z-index 50) */
+.swal2-container {
+  z-index: 99999 !important;
+}

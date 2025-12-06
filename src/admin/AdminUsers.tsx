@@ -44,6 +44,7 @@ import {
     SortingState,
     ColumnFiltersState,
 } from "@tanstack/react-table";
+import { confirmAction, showSuccessToast } from "@/utils/sweetAlert";
 
 interface UserData {
     id: string;
@@ -134,12 +135,18 @@ export default function AdminUsers() {
     };
 
     const handleDeleteUser = async (userId: string) => {
-        if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+        const isConfirmed = await confirmAction(
+            'Are you sure?',
+            "Are you sure you want to delete this user? This action cannot be undone.",
+            'Yes, delete it!'
+        );
+
+        if (!isConfirmed) return;
 
         try {
             await deleteDoc(doc(db, "user_roles", userId));
             setUsers(users.filter(u => u.id !== userId));
-            toast.success("User deleted successfully");
+            showSuccessToast("User deleted successfully");
         } catch (error) {
             console.error("Error deleting user:", error);
             toast.error("Failed to delete user");

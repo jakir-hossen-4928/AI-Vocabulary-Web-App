@@ -9,9 +9,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Volume2, Trash2, Heart, Loader2, Edit } from "lucide-react";
 import { speakText } from "@/services/ttsService";
-import { toast } from "sonner";
 import { useVocabularies, useVocabularyMutations } from "@/hooks/useVocabularies";
 import { useFavorites } from "@/hooks/useFavorites";
+import { confirmAction, showSuccessToast, showErrorToast } from "@/utils/sweetAlert";
 import { motion } from "framer-motion";
 
 export default function VocabularyDetail() {
@@ -55,12 +55,12 @@ export default function VocabularyDetail() {
         if (docSnap.exists()) {
           setVocab({ id: docSnap.id, ...docSnap.data() } as Vocabulary);
         } else {
-          toast.error("Vocabulary not found");
+          showErrorToast("Vocabulary not found");
           navigate("/vocabularies");
         }
       } catch (error) {
         console.error("Error fetching vocabulary:", error);
-        toast.error("Failed to load vocabulary");
+        showErrorToast("Failed to load vocabulary");
       } finally {
         setLoading(false);
       }
@@ -72,18 +72,26 @@ export default function VocabularyDetail() {
   const toggleFavorite = () => {
     if (!id) return;
     toggleFav(id);
-    toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
+    showSuccessToast(isFavorite ? "Removed from favorites" : "Added to favorites");
   };
 
   const handleDelete = async () => {
     if (!id || !isAdmin) return;
-    if (!confirm("Are you sure you want to delete this vocabulary?")) return;
 
-    try {
-      await deleteVocabulary.mutateAsync(id);
-      navigate("/vocabularies");
-    } catch (error) {
-      // Error handling is done in mutation
+    const isConfirmed = await confirmAction(
+      'Are you sure?',
+      "You won't be able to revert this!",
+      'Yes, delete it!'
+    );
+
+    if (isConfirmed) {
+      try {
+        await deleteVocabulary.mutateAsync(id);
+        showSuccessToast('Your vocabulary has been deleted.');
+        navigate("/vocabularies");
+      } catch (error) {
+        // Error handling is done in mutation
+      }
     }
   };
 

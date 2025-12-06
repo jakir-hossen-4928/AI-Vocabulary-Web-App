@@ -11,6 +11,7 @@ import { VocabCard } from "@/components/VocabCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/useDebounce";
 import { WordChatModal } from "@/components/WordChatModal";
+import { VocabularyDetailsModal } from "@/components/VocabularyDetailsModal";
 import { Vocabulary } from "@/types/vocabulary";
 import { searchDictionaryAPI, convertDictionaryToVocabulary } from "@/services/dictionaryApiService";
 import { toast } from "sonner";
@@ -37,6 +38,10 @@ export default function Home() {
   const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
+
+  // Modal State
+  const [selectedVocab, setSelectedVocab] = useState<Vocabulary | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const [model, setModel] = useState<string | null>(getSelectedModel() || null);
 
@@ -297,7 +302,8 @@ export default function Home() {
                       onClick={() => {
                         // Don't navigate for online results
                         if (!vocab.isOnline) {
-                          navigate(`/vocabularies/${vocab.id}`);
+                          setSelectedVocab(vocab);
+                          setIsDetailsModalOpen(true);
                         }
                       }}
                       onImproveMeaning={vocab.isOnline ? undefined : handleImproveMeaning}
@@ -360,6 +366,15 @@ export default function Home() {
         initialPrompt={chatInitialPrompt}
 
         model={model}
+      />
+
+      <VocabularyDetailsModal
+        vocabulary={selectedVocab}
+        open={isDetailsModalOpen}
+        onOpenChange={setIsDetailsModalOpen}
+        isFavorite={selectedVocab ? favorites.includes(selectedVocab.id) : false}
+        onToggleFavorite={toggleFavorite}
+        isAdmin={user?.role === 'admin'}
       />
     </div>
   );

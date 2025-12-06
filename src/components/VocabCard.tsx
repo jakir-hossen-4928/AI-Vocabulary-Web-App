@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Vocabulary } from "@/types/vocabulary";
 import { speakText } from "@/services/ttsService";
+import { confirmAction, showSuccessToast } from "@/utils/sweetAlert";
 import { memo, useState } from "react";
 
 interface VocabCardProps {
@@ -57,10 +58,19 @@ export const VocabCard = memo(({
     speakText(vocab.english);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onDelete && confirm(`Are you sure you want to delete "${vocab.english}"?`)) {
-      onDelete(vocab.id);
+    if (onDelete) {
+      const isConfirmed = await confirmAction(
+        'Are you sure?',
+        `Are you sure you want to delete "${vocab.english}"?`,
+        'Yes, delete it!'
+      );
+
+      if (isConfirmed) {
+        onDelete(vocab.id);
+        showSuccessToast('Vocabulary deleted successfully');
+      }
     }
   };
 

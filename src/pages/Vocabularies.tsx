@@ -34,9 +34,12 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Vocabulary } from "@/types/vocabulary";
 import { WordChatModal } from "@/components/WordChatModal";
+import { VocabularyDetailsModal } from "@/components/VocabularyDetailsModal";
+import { ViewPreferenceDialog } from "@/components/ViewPreferenceDialog";
 import { toast } from "sonner";
 import { getSelectedModel } from "@/openrouterAi/apiKeyStorage";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
+import { useViewPreference } from "@/hooks/useViewPreference";
 
 export default function Vocabularies() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -71,6 +74,12 @@ export default function Vocabularies() {
   const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
 
   const [model, setModel] = useState<string | null>(getSelectedModel() || null);
+
+  // View Preference State
+  const { preference, savePreference, clearPreference } = useViewPreference();
+  const [showPreferenceDialog, setShowPreferenceDialog] = useState(false);
+  const [selectedVocab, setSelectedVocab] = useState<Vocabulary | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // Voice search
   const { isListening, startListening } = useVoiceSearch((transcript) => {
@@ -286,6 +295,39 @@ export default function Vocabularies() {
     return () => window.removeEventListener('storage', handler);
   }, []);
 
+  const handleVocabClick = (vocab: Vocabulary) => {
+    // Check if mobile device
+    if (window.innerWidth < 768) {
+      navigate(`/vocabularies/${vocab.id}`);
+      return;
+    }
+
+    // Check preference for desktop
+    if (!preference) {
+      setSelectedVocab(vocab);
+      setShowPreferenceDialog(true);
+    } else if (preference === "modal") {
+      setSelectedVocab(vocab);
+      setIsDetailsModalOpen(true);
+    } else {
+      navigate(`/vocabularies/${vocab.id}`);
+    }
+  };
+
+  const handlePreferenceSelect = (pref: "modal" | "page") => {
+    savePreference(pref);
+    setShowPreferenceDialog(false);
+
+    if (selectedVocab) {
+      if (pref === "modal") {
+        setIsDetailsModalOpen(true);
+      } else {
+        navigate(`/vocabularies/${selectedVocab.id}`);
+        setSelectedVocab(null);
+      }
+    }
+  };
+
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
       {/* Header */}
@@ -457,6 +499,26 @@ export default function Vocabularies() {
                     />
                   </div>
 
+                  {/* View Preference Reset */}
+                  <div className="flex items-center justify-between p-3 sm:p-4 border rounded-lg">
+                    <div className="space-y-0.5 flex-1 pr-2">
+                      <Label className="text-sm sm:text-base">View Preference</Label>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Current: {preference ? (preference === "modal" ? "Modal View" : "Details Page") : "Not Set"}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        clearPreference();
+                        toast.success("View preference reset");
+                      }}
+                    >
+                      Reset
+                    </Button>
+                  </div>
+
                   {/* Active Filters Summary */}
                   {activeFiltersCount > 0 && (
                     <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-2">
@@ -556,7 +618,7 @@ export default function Vocabularies() {
                         index={virtualItem.index}
                         isFavorite={favorites.includes(vocab.id)}
                         onToggleFavorite={toggleFavorite}
-                        onClick={() => navigate(`/vocabularies/${vocab.id}`)}
+                        onClick={() => handleVocabClick(vocab)}
                         onDelete={handleDelete}
                         onImproveMeaning={handleImproveMeaning}
                         isAdmin={isAdmin}
@@ -600,6 +662,20 @@ export default function Vocabularies() {
         initialPrompt={chatInitialPrompt}
 
         model={model}
+      />
+
+      <ViewPreferenceDialog
+        open={showPreferenceDialog}
+        onSelect={handlePreferenceSelect}
+      />
+
+      <VocabularyDetailsModal
+        vocabulary={selectedVocab}
+        open={isDetailsModalOpen}
+        onOpenChange={setIsDetailsModalOpen}
+        isFavorite={selectedVocab ? favorites.includes(selectedVocab.id) : false}
+        onToggleFavorite={toggleFavorite}
+        isAdmin={isAdmin}
       />
     </div >
   );

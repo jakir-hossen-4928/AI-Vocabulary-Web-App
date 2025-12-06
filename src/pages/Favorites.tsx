@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { generateFavoritesPDF } from "@/lib/pdf/generateFavoritesPdf";
 import { motion } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { VocabularyDetailsModal } from "@/components/VocabularyDetailsModal";
 
 export default function Favorites() {
   const { data: vocabularies = [], isLoading } = useVocabularies();
@@ -28,6 +29,10 @@ export default function Favorites() {
   const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
+
+  // Modal State
+  const [selectedVocab, setSelectedVocab] = useState<Vocabulary | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -178,7 +183,10 @@ export default function Favorites() {
                         index={virtualItem.index}
                         isFavorite={true}
                         onToggleFavorite={toggleFavorite}
-                        onClick={() => navigate(`/vocabularies/${vocab.id}`)}
+                        onClick={() => {
+                          setSelectedVocab(vocab);
+                          setIsDetailsModalOpen(true);
+                        }}
                         onImproveMeaning={handleImproveMeaning}
                       />
                     </div>
@@ -195,6 +203,15 @@ export default function Favorites() {
         open={isChatOpen}
         onOpenChange={setIsChatOpen}
         initialPrompt={chatInitialPrompt}
+      />
+
+      <VocabularyDetailsModal
+        vocabulary={selectedVocab}
+        open={isDetailsModalOpen}
+        onOpenChange={setIsDetailsModalOpen}
+        isFavorite={true}
+        onToggleFavorite={toggleFavorite}
+        isAdmin={user?.role === 'admin'}
       />
     </div >
   );

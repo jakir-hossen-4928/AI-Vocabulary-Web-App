@@ -13,13 +13,14 @@ import { db } from "@/lib/firebase";
 import { Vocabulary } from "@/types/vocabulary";
 import { toast } from "sonner";
 import { dexieService } from "@/lib/dexieDb";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 
 const SYNC_KEY = 'vocabularies';
-const CACHE_DURATION_MINUTES = 60; // Increased to 60 minutes to reduce sync frequency
+const CACHE_DURATION_MINUTES = 3; // Reduced to 5 minutes for better auto-sync
 
 export const useVocabularies = () => {
     const queryClient = useQueryClient();
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const queryResult = useQuery({
         queryKey: ["vocabularies"],
@@ -61,7 +62,7 @@ export const useVocabularies = () => {
                         // Defer background sync to avoid blocking main thread during initial render
                         setTimeout(() => {
                             fetchAndSync().catch(err => console.error("Background sync failed:", err));
-                        }, 5000); // Wait 5 seconds before syncing
+                        }, 1000); // Reduced wait time to 1 second for faster updates
                     } else {
                         console.log('[Dexie] Using fresh cached data');
                     }
@@ -85,11 +86,46 @@ export const useVocabularies = () => {
         },
         staleTime: 1000 * 60 * CACHE_DURATION_MINUTES, // Consider data fresh for this long
         gcTime: 1000 * 60 * 60 * 24, // Keep in garbage collection for 24 hours (offline support)
+        refetchInterval: 1000 * 60 * CACHE_DURATION_MINUTES, // Auto-refetch every 5 minutes
+        refetchOnWindowFocus: true, // Refetch when window gains focus
+        refetchOnReconnect: true, // Refetch when network reconnects
     });
+
+    const refresh = async () => {
+        setIsRefreshing(true);
+        console.log('[Vocabularies] Force refreshing from Firestore...');
+        try {
+            // Force fetch from Firestore
+            const q = query(collection(db, "vocabularies"), orderBy("createdAt", "desc"));
+            const snapshot = await getDocs(q);
+            const vocabularies = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Vocabulary[];
+
+            console.log(`[Firestore] Force refreshed ${vocabularies.length} vocabularies`);
+
+            // Update Dexie
+            await dexieService.clearVocabularies();
+            await dexieService.addVocabularies(vocabularies);
+            await dexieService.updateSyncMetadata(SYNC_KEY);
+
+            // Update React Query Cache
+            queryClient.setQueryData(["vocabularies"], vocabularies);
+
+            return vocabularies;
+        } catch (error) {
+            console.error("Error refreshing vocabularies:", error);
+            throw error;
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     return {
         ...queryResult,
-        refresh: queryResult.refetch,
+        refresh,
+        isRefetching: queryResult.isRefetching || isRefreshing,
     };
 };
 
@@ -122,7 +158,7 @@ export const useVocabularyMutations = () => {
     });
 
     const updateVocabulary = useMutation({
-        mutationFn: async ({ id, ...data }: Partial<Vocabulary> & { id: string }) => {
+        mutationFn: async ({ id, data }: { id: string; data: Partial<Vocabulary> }) => {
             await updateDoc(doc(db, "vocabularies", id), data);
             return { id, ...data };
         },
@@ -146,8 +182,6 @@ export const useVocabularyMutations = () => {
 
                 console.log('[Dexie] Updated vocabulary in cache');
             }
-
-            toast.success("Vocabulary updated successfully");
         },
         onError: (error: any) => {
             console.error("Error updating vocabulary:", error);
@@ -172,7 +206,6 @@ export const useVocabularyMutations = () => {
             });
 
             console.log('[Dexie] Deleted vocabulary from cache');
-            toast.success("Vocabulary deleted");
         },
         onError: (error: any) => {
             console.error("Error deleting vocabulary:", error);

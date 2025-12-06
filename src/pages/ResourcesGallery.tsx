@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { motion } from "framer-motion";
-import { toast } from "sonner";
+import { showSuccessToast, showErrorToast, confirmAction } from "@/utils/sweetAlert";
 import {
   Select,
   SelectContent,
@@ -51,6 +51,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { cleanTextContent } from "@/utils/textCleaner";
+
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 export default function ResourcesGallery() {
@@ -89,7 +90,7 @@ export default function ResourcesGallery() {
 
   const handleAdd = async () => {
     if (!title.trim()) {
-      toast.error("Please provide a title");
+      showErrorToast("Please provide a title");
       return;
     }
 
@@ -149,12 +150,20 @@ export default function ResourcesGallery() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this resource?")) return;
 
-    try {
-      await deleteResource.mutateAsync(id);
-    } catch (error) {
-      // Error toast is handled by mutation
+    const isConfirmed = await confirmAction(
+      'Are you sure?',
+      "Are you sure you want to delete this resource?",
+      'Yes, delete it!'
+    );
+
+    if (isConfirmed) {
+      try {
+        await deleteResource.mutateAsync(id);
+        showSuccessToast('Resource deleted successfully');
+      } catch (error) {
+        // Error toast is handled by mutation
+      }
     }
   };
 

@@ -7,7 +7,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut, Shield, Download, BookOpen, TrendingUp } from "lucide-react";
+import { User, LogOut, Shield, Download, BookOpen, TrendingUp, Monitor, Layout } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useViewPreference } from "@/hooks/useViewPreference";
 import { toast } from "sonner";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { motion } from "framer-motion";
@@ -20,6 +23,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const [totalWords, setTotalWords] = useState(0);
   const [favoritesCount, setFavoritesCount] = useState(0);
+  const { preference, savePreference } = useViewPreference();
 
   const { isInstallable, installApp } = useInstallPrompt();
 
@@ -147,6 +151,56 @@ export default function Profile() {
                 <p className="text-xs text-muted-foreground">Favorites</p>
                 <p className="text-xl font-bold text-foreground">{favoritesCount}</p>
               </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Preferences */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="mb-6"
+        >
+          <h3 className="text-lg font-semibold mb-3 px-1">Preferences</h3>
+          <Card className="p-4 shadow-hover">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Vocabulary View</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Choose how to view vocabulary details on desktop
+                  </p>
+                </div>
+                <Layout className="h-5 w-5 text-muted-foreground" />
+              </div>
+
+              <RadioGroup
+                value={preference || "modal"}
+                onValueChange={(val) => savePreference(val as "modal" | "page")}
+                className="grid grid-cols-2 gap-4 pt-2"
+              >
+                <div>
+                  <RadioGroupItem value="modal" id="modal" className="peer sr-only" />
+                  <Label
+                    htmlFor="modal"
+                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                  >
+                    <Monitor className="mb-2 h-6 w-6" />
+                    <span className="font-semibold">Modal View</span>
+                  </Label>
+                </div>
+                <div>
+                  <RadioGroupItem value="page" id="page" className="peer sr-only" />
+                  <Label
+                    htmlFor="page"
+                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                  >
+                    <Layout className="mb-2 h-6 w-6" />
+                    <span className="font-semibold">Details Page</span>
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
           </Card>
         </motion.div>
