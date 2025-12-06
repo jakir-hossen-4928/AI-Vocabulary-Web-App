@@ -262,7 +262,7 @@ export default function Vocabularies() {
     const vocab = vocabularies.find(v => v.id === id);
     if (!vocab) return;
 
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 1024) {
       navigate(`/chat/${id}`, {
         state: {
           initialPrompt: `The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`
@@ -295,9 +295,21 @@ export default function Vocabularies() {
     return () => window.removeEventListener('storage', handler);
   }, []);
 
+  // Close details modal on mobile/tablet resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && isDetailsModalOpen) {
+        setIsDetailsModalOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isDetailsModalOpen]);
+
   const handleVocabClick = (vocab: Vocabulary) => {
-    // Check if mobile device
-    if (window.innerWidth < 768) {
+    // Check if mobile/tablet device
+    if (window.innerWidth < 1024) {
       navigate(`/vocabularies/${vocab.id}`);
       return;
     }

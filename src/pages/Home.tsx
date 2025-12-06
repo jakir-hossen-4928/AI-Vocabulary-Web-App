@@ -61,6 +61,18 @@ export default function Home() {
     return () => window.removeEventListener('storage', handler);
   }, []);
 
+  // Close details modal on mobile/tablet resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && isDetailsModalOpen) {
+        setIsDetailsModalOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isDetailsModalOpen]);
+
   // Sync search query with URL
   useEffect(() => {
     const params = new URLSearchParams(searchParams);
@@ -129,6 +141,15 @@ export default function Home() {
   const handleImproveMeaning = async (id: string) => {
     const vocab = vocabularies.find(v => v.id === id);
     if (!vocab) return;
+
+    if (window.innerWidth < 1024) {
+      navigate(`/chat/${id}`, {
+        state: {
+          initialPrompt: `The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`
+        }
+      });
+      return;
+    }
 
     setChatVocab(vocab);
     setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
@@ -302,8 +323,12 @@ export default function Home() {
                       onClick={() => {
                         // Don't navigate for online results
                         if (!vocab.isOnline) {
-                          setSelectedVocab(vocab);
-                          setIsDetailsModalOpen(true);
+                          if (window.innerWidth < 1024) {
+                            navigate(`/vocabularies/${vocab.id}`);
+                          } else {
+                            setSelectedVocab(vocab);
+                            setIsDetailsModalOpen(true);
+                          }
                         }
                       }}
                       onImproveMeaning={vocab.isOnline ? undefined : handleImproveMeaning}

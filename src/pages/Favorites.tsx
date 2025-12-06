@@ -41,6 +41,18 @@ export default function Favorites() {
     }
   }, [user, navigate]);
 
+  // Close details modal on mobile/tablet resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && isDetailsModalOpen) {
+        setIsDetailsModalOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isDetailsModalOpen]);
+
   const favoriteVocabs = vocabularies
     .filter(v => favorites.includes(v.id))
     .sort((a, b) => {
@@ -51,7 +63,7 @@ export default function Favorites() {
     const vocab = vocabularies.find(v => v.id === id);
     if (!vocab) return;
 
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 1024) {
       navigate(`/chat/${id}`, {
         state: {
           initialPrompt: `The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`
@@ -184,8 +196,12 @@ export default function Favorites() {
                         isFavorite={true}
                         onToggleFavorite={toggleFavorite}
                         onClick={() => {
-                          setSelectedVocab(vocab);
-                          setIsDetailsModalOpen(true);
+                          if (window.innerWidth < 1024) {
+                            navigate(`/vocabularies/${vocab.id}`);
+                          } else {
+                            setSelectedVocab(vocab);
+                            setIsDetailsModalOpen(true);
+                          }
                         }}
                         onImproveMeaning={handleImproveMeaning}
                       />
