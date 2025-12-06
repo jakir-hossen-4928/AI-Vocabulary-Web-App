@@ -43,15 +43,20 @@ declare global {
     }
 }
 
+type SupportedLanguage = 'en-US' | 'bn-BD';
+
 export function useVoiceSearch(onResult: (transcript: string) => void) {
     const [isListening, setIsListening] = useState(false);
-    const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
+    const [language, setLanguage] = useState<SupportedLanguage>('en-US');
     const [interimTranscript, setInterimTranscript] = useState<string>('');
 
-    const enRecRef = useRef<SpeechRecognition | null>(null);
-    const bnRecRef = useRef<SpeechRecognition | null>(null);
-    const hasFinalRef = useRef(false);
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
     const toastIdRef = useRef<string | number | null>(null);
+    const hasFinalRef = useRef(false);
+
+    const toggleLanguage = useCallback(() => {
+        setLanguage(prev => prev === 'en-US' ? 'bn-BD' : 'en-US');
+    }, []);
 
     const startListening = useCallback(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -65,197 +70,116 @@ export function useVoiceSearch(onResult: (transcript: string) => void) {
 
         // Reset state
         hasFinalRef.current = false;
-        setDetectedLanguage(null);
         setInterimTranscript('');
         setIsListening(true);
 
+        const langLabel = language === 'en-US' ? 'English' : 'Bangla';
+        const langFlag = language === 'en-US' ? '🇺🇸' : '🇧🇩';
+
         // Show listening toast
-        toastIdRef.current = toast.loading("🎤 Listening...", {
-            description: "Speak in English or Bangla"
+        toastIdRef.current = toast.loading(`🎤 Listening (${langLabel})...`, {
+            description: "Speak clearly"
         });
 
-        // Create English recognizer
-        const enRec = new SpeechRecognition();
-        enRec.lang = "en-US";
-        enRec.interimResults = true; // Enable interim results for live feedback
-        enRec.continuous = false;
+        // Create recognizer for selected language ONLY
+        const recognition = new SpeechRecognition();
+        recognition.lang = language;
+        recognition.interimResults = true;
+        recognition.continuous = false; // Stop after first result
 
-        // Create Bangla recognizer
-        const bnRec = new SpeechRecognition();
-        bnRec.lang = "bn-BD";
-        enRec.interimResults = true;
-        bnRec.continuous = false;
-
-        const handleResult = (lang: string, event: SpeechRecognitionEvent) => {
-            if (hasFinalRef.current) return;
-
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
             const result = event.results[0];
             const transcript = result[0].transcript;
-            const confidence = result[0].confidence;
             const isFinal = result.isFinal;
 
-            // Update interim transcript for live feedback
             if (!isFinal) {
                 setInterimTranscript(transcript);
-                setDetectedLanguage(lang);
-
-                // Update toast with interim result
                 if (toastIdRef.current) {
-                    toast.loading(`🎤 ${lang}: "${transcript}"`, {
+                    toast.loading(`🎤 ${langLabel}: "${transcript}"`, {
                         id: toastIdRef.current,
                         description: "Keep speaking..."
                     });
                 }
-                return;
-            }
+            } else {
+                hasFinalRef.current = true;
+                setInterimTranscript('');
+                setIsListening(false);
 
-            // Final result
-            hasFinalRef.current = true;
-            setDetectedLanguage(lang);
+                console.log(`✅ Recognized (${langLabel}): "${transcript}"`);
+
+                if (toastIdRef.current) {
+                    toast.dismiss(toastIdRef.current);
+                }
+
+                onResult(transcript);
+                toast.success(`${langFlag} Detected`, {
+                    description: `"${transcript}"`,
+                    duration: 3000
+                });
+            }
+        };
+
+        recognition.onerror = (event: any) => {
+            if (event.error === 'aborted') return;
+            if (event.error === 'no-speech' && hasFinalRef.current) return;
+
+            console.error("Speech recognition error", event.error);
+            setIsListening(false);
             setInterimTranscript('');
 
-            console.log(`✅ Detected ${lang}: "${transcript}" (${(confidence * 100).toFixed(0)}% confidence)`);
-
-            // Stop both recognizers
-            try {
-                enRec.stop();
-                bnRec.stop();
-            } catch (e) {
-                // Ignore errors if already stopped
-            }
-
-            setIsListening(false);
-
-            // Dismiss loading toast
             if (toastIdRef.current) {
                 toast.dismiss(toastIdRef.current);
             }
 
-            // Call the callback with the transcript
-            onResult(transcript);
-
-            // Show success toast with language flag
-            const flag = lang === 'English' ? '🇺🇸' : '🇧🇩';
-            toast.success(`${flag} ${lang} detected`, {
-                description: `"${transcript}"`,
-                duration: 3000
-            });
+            if (event.error === 'no-speech') {
+                toast.error("No speech detected", {
+                    description: "Please try again"
+                });
+            } else if (event.error === 'not-allowed') {
+                toast.error("Microphone denied", {
+                    description: "Please allow access"
+                });
+            } else {
+                toast.error("Recognition failed");
+            }
         };
 
-        const handleError = (lang: string) => (event: any) => {
-            // Ignore "aborted" errors - they're expected when one recognizer wins
-            if (event.error === 'aborted') {
-                return;
-            }
-
-            // Ignore "no-speech" if we already have a result
-            if (event.error === 'no-speech' && hasFinalRef.current) {
-                return;
-            }
-
-            console.error(`${lang} recognition error:`, event.error);
-
-            // Only show error if both failed
+        recognition.onend = () => {
             if (!hasFinalRef.current) {
-                setTimeout(() => {
-                    if (!hasFinalRef.current) {
-                        setIsListening(false);
-                        setInterimTranscript('');
-
-                        if (toastIdRef.current) {
-                            toast.dismiss(toastIdRef.current);
-                        }
-
-                        if (event.error === 'no-speech') {
-                            toast.error("No speech detected", {
-                                description: "Please try again and speak clearly"
-                            });
-                        } else if (event.error === 'not-allowed') {
-                            toast.error("Microphone access denied", {
-                                description: "Please allow microphone access in browser settings"
-                            });
-                        } else {
-                            toast.error("Voice recognition failed", {
-                                description: "Please try again"
-                            });
-                        }
-                    }
-                }, 1000);
+                setIsListening(false);
+                setInterimTranscript('');
+                if (toastIdRef.current) toast.dismiss(toastIdRef.current);
             }
         };
 
-        const handleEnd = () => {
-            if (!hasFinalRef.current && !interimTranscript) {
-                setTimeout(() => {
-                    if (!hasFinalRef.current) {
-                        setIsListening(false);
-                        setInterimTranscript('');
-
-                        if (toastIdRef.current) {
-                            toast.dismiss(toastIdRef.current);
-                        }
-
-                        toast.info("No speech detected", {
-                            description: "Click the mic and speak clearly"
-                        });
-                    }
-                }, 500);
-            }
-        };
-
-        // Set up event handlers
-        enRec.onresult = (e) => handleResult("English", e);
-        bnRec.onresult = (e) => handleResult("Bangla", e);
-
-        enRec.onerror = handleError("English");
-        bnRec.onerror = handleError("Bangla");
-
-        enRec.onend = handleEnd;
-        bnRec.onend = handleEnd;
-
-        // Store refs
-        enRecRef.current = enRec;
-        bnRecRef.current = bnRec;
-
-        // Start both recognizers
+        recognitionRef.current = recognition;
         try {
-            enRec.start();
-            bnRec.start();
-        } catch (error) {
-            console.error("Failed to start recognition:", error);
+            recognition.start();
+        } catch (e) {
+            console.error("Failed to start", e);
             setIsListening(false);
-
-            if (toastIdRef.current) {
-                toast.dismiss(toastIdRef.current);
-            }
-
-            toast.error("Failed to start voice recognition", {
-                description: "Please check microphone permissions"
-            });
         }
-    }, [onResult, interimTranscript]);
+
+    }, [language, onResult]);
 
     const stopListening = useCallback(() => {
-        try {
-            enRecRef.current?.stop();
-            bnRecRef.current?.stop();
-        } catch (e) {
-            // Ignore errors
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch (e) { }
         }
         setIsListening(false);
         setInterimTranscript('');
-        hasFinalRef.current = false;
-
-        if (toastIdRef.current) {
-            toast.dismiss(toastIdRef.current);
-        }
+        if (toastIdRef.current) toast.dismiss(toastIdRef.current);
     }, []);
 
     return {
         isListening,
-        detectedLanguage,
-        interimTranscript,
         startListening,
         stopListening,
+        detectedLanguage: language === 'en-US' ? 'English' : 'Bangla', // backwards compatibility
+        interimTranscript,
+        language,
+        toggleLanguage
     };
 }

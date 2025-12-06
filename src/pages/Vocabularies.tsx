@@ -82,7 +82,7 @@ export default function Vocabularies() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // Voice search
-  const { isListening, startListening } = useVoiceSearch((transcript) => {
+  const { isListening, startListening, language, toggleLanguage } = useVoiceSearch((transcript) => {
     setSearchQuery(transcript);
     setSearchParams({ search: transcript });
   });
@@ -400,41 +400,66 @@ export default function Vocabularies() {
           </div>
 
           {/* Search and Filter Bar */}
+          {/* Search and Filter Bar */}
           <div className="flex gap-1.5 sm:gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-4 sm:w-4 text-muted-foreground pointer-events-none" />
+            <div className="relative flex-1 group">
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-4 sm:w-4 text-primary-foreground/50 group-focus-within:text-primary-foreground transition-colors pointer-events-none" />
               <Input
                 placeholder="Search words..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`pl-8 sm:pl-10 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus-visible:ring-primary-foreground/30 h-11 sm:h-12 text-sm ${searchQuery ? 'pr-16 sm:pr-20' : 'pr-11 sm:pr-12'
+                className={`pl-8 sm:pl-10 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus-visible:ring-primary-foreground/30 h-11 sm:h-12 text-sm transition-all ${searchQuery ? 'pr-[6.5rem] sm:pr-32' : 'pr-[5rem] sm:pr-24'
                   }`}
               />
 
-              {/* Clear Button - Shows when there's text, positioned before voice icon */}
+              {/* Clear Button - Shows when there's text */}
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-10 sm:right-12 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-primary-foreground/10 text-primary-foreground/50 hover:text-primary-foreground transition-colors z-10"
+                  className="absolute right-[5rem] sm:right-[6.5rem] top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-primary-foreground/10 text-primary-foreground/50 hover:text-primary-foreground transition-colors z-10"
                   aria-label="Clear search"
                 >
-                  <X className="h-4 w-4 sm:h-4 sm:w-4" />
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               )}
 
-              {/* Voice Search Button - Always at the end */}
-              <button
-                onClick={startListening}
-                disabled={isListening}
-                className={`absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-full transition-all z-10 ${isListening
-                  ? 'bg-red-500 text-white animate-pulse shadow-lg'
-                  : 'text-primary-foreground/50 hover:text-primary-foreground hover:bg-primary-foreground/10'
-                  }`}
-                aria-label="Voice search"
-                title="Voice search (English or Bangla)"
-              >
-                <Mic className="h-4 w-4 sm:h-4 sm:w-4" />
-              </button>
+              {/* Voice & Language Controls Group */}
+              <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10 bg-black/5 rounded-full p-0.5 sm:p-1 backdrop-blur-[2px]">
+                <button
+                  onClick={toggleLanguage}
+                  className="
+                    flex items-center justify-center
+                    px-2 h-7 sm:h-8 min-w-[32px] sm:min-w-[36px]
+                    text-[10px] sm:text-xs font-bold
+                    rounded-full transition-all duration-200
+                    bg-primary-foreground/10 hover:bg-primary-foreground/20
+                    text-primary-foreground border border-primary-foreground/10
+                    active:scale-95 select-none shadow-sm
+                  "
+                  title={`Switch language (Current: ${language === 'en-US' ? 'English' : 'Bangla'})`}
+                >
+                  {language === 'en-US' ? 'EN' : 'BN'}
+                </button>
+
+                <div className="w-px h-3 bg-primary-foreground/10 mx-0.5" />
+
+                <button
+                  onClick={startListening}
+                  disabled={isListening}
+                  className={`
+                    flex items-center justify-center rounded-full transition-all duration-300
+                    h-7 w-7 sm:h-8 sm:w-8
+                    ${isListening
+                      ? 'bg-red-500 text-white shadow-lg scale-110'
+                      : 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                    }
+                  `}
+                  aria-label="Voice search"
+                  title="Voice search"
+                >
+                  <Mic className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isListening ? 'animate-pulse' : ''}`} />
+                </button>
+              </div>
             </div>
 
             <Sheet>

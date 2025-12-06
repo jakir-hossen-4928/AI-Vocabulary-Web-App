@@ -46,7 +46,7 @@ export default function Home() {
   const [model, setModel] = useState<string | null>(getSelectedModel() || null);
 
   // Voice search
-  const { isListening, startListening, interimTranscript, detectedLanguage } = useVoiceSearch((transcript) => {
+  const { isListening, startListening, interimTranscript, detectedLanguage, language, toggleLanguage } = useVoiceSearch((transcript) => {
     setSearchQuery(transcript);
     setSearchParams({ search: transcript });
   });
@@ -222,7 +222,7 @@ export default function Home() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() => setIsSearchFocused(false)}
-                  className={`w-full pl-12 h-12 sm:h-14 text-base border-0 bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/70 ${searchQuery ? 'pr-20 sm:pr-24' : 'pr-12 sm:pr-14'
+                  className={`w-full pl-12 h-12 sm:h-14 text-base border-0 bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/70 ${searchQuery ? 'pr-[6.5rem] sm:pr-[7.5rem]' : 'pr-[4.5rem] sm:pr-[5.5rem]'
                     }`}
                 />
 
@@ -234,7 +234,7 @@ export default function Home() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       onClick={clearSearch}
-                      className="absolute right-12 sm:right-14 p-1.5 rounded-full hover:bg-slate-100 text-muted-foreground transition-colors z-10"
+                      className="absolute right-[4.5rem] sm:right-[5.5rem] p-1.5 rounded-full hover:bg-slate-100 text-muted-foreground transition-colors z-10"
                       aria-label="Clear search"
                     >
                       <X className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -242,19 +242,28 @@ export default function Home() {
                   )}
                 </AnimatePresence>
 
-                {/* Voice Search Button - Always at the end */}
-                <button
-                  onClick={startListening}
-                  disabled={isListening}
-                  className={`absolute right-2 sm:right-3 p-2 rounded-full transition-all ${isListening
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'hover:bg-slate-100 text-muted-foreground'
-                    }`}
-                  aria-label="Voice search"
-                  title="Voice search (English or Bangla)"
-                >
-                  <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
+                {/* Voice Search Group */}
+                <div className="absolute right-2 sm:right-3 flex items-center gap-1 z-10">
+                  <button
+                    onClick={toggleLanguage}
+                    className="text-[10px] sm:text-xs font-bold text-muted-foreground/80 hover:text-foreground bg-slate-100 px-1.5 py-1 rounded transition-colors uppercase tracking-wider"
+                    title={`Switch language (Current: ${language === 'en-US' ? 'English' : 'Bangla'})`}
+                  >
+                    {language === 'en-US' ? 'EN' : 'BN'}
+                  </button>
+                  <button
+                    onClick={startListening}
+                    disabled={isListening}
+                    className={`p-2 rounded-full transition-all ${isListening
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'hover:bg-slate-100 text-muted-foreground'
+                      }`}
+                    aria-label="Voice search"
+                    title="Voice search"
+                  >
+                    <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
