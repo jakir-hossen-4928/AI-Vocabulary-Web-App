@@ -1,4 +1,4 @@
-import { Home, BookOpen, GraduationCap, User, Activity, Globe, Shield, Users, LogOut, BarChart, Layers, Upload, Heart, Plus, Wand2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, Shield, Users, LogOut, BarChart, Layers, Upload, Heart, Plus, Wand2, ChevronLeft, ChevronRight, LayoutDashboard } from "lucide-react";
 import { NavLink } from "@/navigation/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "firebase/auth";
@@ -104,6 +104,16 @@ export const Sidebar = () => {
                                 </p>
                             </div>
                         )}
+                        <NavLink
+                            to="/admin/dashboard"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all ${isCollapsed ? 'justify-center' : ''
+                                }`}
+                            activeClassName="bg-primary/10 text-primary font-medium"
+                            title={isCollapsed ? "Dashboard" : undefined}
+                        >
+                            <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
+                            {!isCollapsed && <span>Dashboard</span>}
+                        </NavLink>
                         <NavLink
                             to="/vocabularies/add"
                             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all ${isCollapsed ? 'justify-center' : ''

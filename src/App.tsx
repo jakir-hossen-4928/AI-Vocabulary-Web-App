@@ -17,6 +17,7 @@ import AdminUsers from "./admin/AdminUsers";
 import AdminTools from "./admin/AdminTools";
 import Favorites from "./pages/Favorites";
 import DuplicateManager from "./admin/DuplicateManager";
+import AdminDashboard from "./admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import { AdminRoute } from "@/routes/AdminRoute";
 
@@ -82,6 +83,8 @@ const AppRoutes = () => {
         {/* Redirect old admin routes to resources gallery */}
         <Route path="/admin/resources" element={<Navigate to="/resources" replace />} />
         <Route path="/admin/grammar" element={<Navigate to="/resources" replace />} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
         <Route path="/admin/tools" element={<AdminRoute><AdminTools /></AdminRoute>} />
         <Route path="/admin/duplicates" element={<AdminRoute><DuplicateManager /></AdminRoute>} />
