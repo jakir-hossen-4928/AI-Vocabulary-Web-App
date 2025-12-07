@@ -17,6 +17,7 @@ import { searchDictionaryAPI, convertDictionaryToVocabulary } from "@/services/d
 import { toast } from "sonner";
 import { getSelectedModel } from "@/openrouterAi/apiKeyStorage";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
+import { safeTimestamp } from "@/utils/dateUtils";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -126,16 +127,13 @@ export default function Home() {
 
     searchOnline();
   }, [debouncedSearch, isLoading, data]);
-
   const clearSearch = () => {
     setSearchQuery("");
     setOnlineResults([]);
   };
 
   const vocabularies = [...(data || [])].sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return dateB - dateA;
+    return safeTimestamp(b.createdAt) - safeTimestamp(a.createdAt);
   });
 
   const handleImproveMeaning = async (id: string) => {
@@ -246,7 +244,7 @@ export default function Home() {
                 <div className="absolute right-2 sm:right-3 flex items-center gap-1 z-10">
                   <button
                     onClick={toggleLanguage}
-                    className="text-[10px] sm:text-xs font-bold text-muted-foreground/80 hover:text-foreground bg-slate-100 px-1.5 py-1 rounded transition-colors uppercase tracking-wider"
+                    className="text-[9px] sm:text-xs font-bold text-muted-foreground/80 hover:text-foreground bg-transparent sm:bg-slate-100 px-1.5 py-1 sm:py-1 rounded transition-colors uppercase tracking-wider"
                     title={`Switch language (Current: ${language === 'en-US' ? 'English' : 'Bangla'})`}
                   >
                     {language === 'en-US' ? 'EN' : 'BN'}
@@ -254,7 +252,7 @@ export default function Home() {
                   <button
                     onClick={startListening}
                     disabled={isListening}
-                    className={`p-2 rounded-full transition-all ${isListening
+                    className={`p-1.5 sm:p-2 rounded-full transition-all ${isListening
                       ? 'bg-red-500 text-white animate-pulse'
                       : 'hover:bg-slate-100 text-muted-foreground'
                       }`}

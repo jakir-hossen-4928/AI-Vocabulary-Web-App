@@ -105,14 +105,14 @@ export const Sidebar = () => {
                             </div>
                         )}
                         <NavLink
-                            to="/admin/dashboard"
+                            to="/admin/analytics"
                             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all ${isCollapsed ? 'justify-center' : ''
                                 }`}
                             activeClassName="bg-primary/10 text-primary font-medium"
-                            title={isCollapsed ? "Dashboard" : undefined}
+                            title={isCollapsed ? "Analytics" : undefined}
                         >
                             <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
-                            {!isCollapsed && <span>Dashboard</span>}
+                            {!isCollapsed && <span>Analytics</span>}
                         </NavLink>
                         <NavLink
                             to="/vocabularies/add"

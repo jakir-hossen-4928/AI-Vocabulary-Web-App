@@ -1,4 +1,5 @@
 import { Vocabulary } from "../types/vocabulary";
+import { safeTimestamp } from "../utils/dateUtils";
 
 type FilterPayload = {
     vocabularies: Vocabulary[];
@@ -37,14 +38,14 @@ self.onmessage = (e: MessageEvent<FilterPayload>) => {
     }).sort((a, b) => {
         switch (sortOrder) {
             case "oldest":
-                return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+                return safeTimestamp(a.createdAt) - safeTimestamp(b.createdAt);
             case "a-z":
                 return a.english.localeCompare(b.english);
             case "z-a":
                 return b.english.localeCompare(a.english);
             case "newest":
             default:
-                return (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+                return safeTimestamp(b.createdAt) - safeTimestamp(a.createdAt);
         }
     });
 

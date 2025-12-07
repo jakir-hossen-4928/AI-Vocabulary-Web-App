@@ -84,8 +84,9 @@ const AppRoutes = () => {
         {/* Redirect old admin routes to resources gallery */}
         <Route path="/admin/resources" element={<AdminRoute><AdminResourceGallery /></AdminRoute>} />
         <Route path="/admin/grammar" element={<Navigate to="/admin/resources" replace />} />
-        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-        <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin" element={<Navigate to="/admin/analytics" replace />} />
+        <Route path="/admin/dashboard" element={<Navigate to="/admin/analytics" replace />} />
+        <Route path="/admin/analytics" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
         <Route path="/admin/tools" element={<AdminRoute><AdminTools /></AdminRoute>} />
         <Route path="/admin/duplicates" element={<AdminRoute><DuplicateManager /></AdminRoute>} />

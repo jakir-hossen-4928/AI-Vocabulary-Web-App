@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useVocabularies } from "@/hooks/useVocabularies";
+import { useResourcesSimple } from "@/hooks/useResources";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,13 +24,15 @@ import {
     Activity,
     Type,
     Download,
-    Headphones,
     FileText,
-    Layers,
     Calendar as CalendarIcon,
     AlertCircle,
     CheckCircle2,
-    RefreshCw
+    RefreshCw,
+    Users,
+    ImageIcon,
+    Clock,
+    Database
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -38,60 +41,63 @@ import {
     isSameDay,
     eachDayOfInterval,
     getDay,
-    getHours
+    getHours,
+    isValid,
+    parseISO
 } from "date-fns";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { cn } from "@/lib/utils";
+import partOfSpeechData from "@/data/partOfSpeech.json";
+
+import { safeDate } from "@/utils/dateUtils";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
 
-// Helper to reliably parse dates
-const safeDate = (date: any): Date => {
-    if (!date) return new Date();
-    try {
-        if (typeof date === 'object' && 'toDate' in date) {
-            return date.toDate();
-        }
-        if (typeof date === 'number') {
-            return new Date(date);
-        }
-        const d = new Date(date);
-        return isNaN(d.getTime()) ? new Date() : d;
-    } catch (e) {
-        return new Date();
-    }
-};
-
 export default function AdminDashboard() {
-    const { data: vocabularies = [], isLoading, refresh, isRefetching } = useVocabularies();
+    const { data: vocabularies = [], isLoading: isLoadingVocabs, refresh, isRefetching } = useVocabularies();
+    const { data: resources = [], isLoading: isLoadingResources } = useResourcesSimple();
+
     const [timeRange, setTimeRange] = useState<'week' | 'month'>('week');
 
     // Advanced Stats Calculations
     const stats = useMemo(() => {
-        if (!vocabularies.length) return null;
-
-        const totalWords = vocabularies.length;
+        const totalWords = vocabularies?.length || 0;
+        const totalResources = resources?.length || 0;
         const now = new Date();
 
-        // 1. Data Quality Metrics
-        const withAudio = vocabularies.filter(v => v.audioUrl).length;
+        // Filter valid dates for time-based analytics
+        const validVocabs = vocabularies.filter(v => safeDate(v.createdAt) !== null);
+
+        // 1. User Stats
+        const uniqueUsers = new Set(
+            vocabularies
+                .map(v => v.userId)
+                .filter(id => id && id.trim() !== '')
+        ).size;
+
+        // If 0 unique users detected but we have words, assume at least 1 (admin/current) or just show 0 if purely server side
+        const activeUsers = uniqueUsers === 0 && totalWords > 0 ? 1 : uniqueUsers;
+
+        // 2. Data Quality Metrics (Revised)
         const withExamples = vocabularies.filter(v => v.examples && v.examples.length > 0).length;
         const withSynonyms = vocabularies.filter(v => v.synonyms && v.synonyms.length > 0).length;
 
         const qualityScores = {
-            audio: Math.round((withAudio / totalWords) * 100),
-            examples: Math.round((withExamples / totalWords) * 100),
-            synonyms: Math.round((withSynonyms / totalWords) * 100),
-            overall: Math.round(((withAudio + withExamples + withSynonyms) / (totalWords * 3)) * 100)
+            examples: totalWords > 0 ? Math.round((withExamples / totalWords) * 100) : 0,
+            synonyms: totalWords > 0 ? Math.round((withSynonyms / totalWords) * 100) : 0,
+            overall: totalWords > 0 ? Math.round(((withExamples + withSynonyms) / (totalWords * 2)) * 100) : 0
         };
 
-        // 2. Contributions / Heatmap Data (Last 365 days)
+        // 3. Contributions / Heatmap Data (Last 365 days)
         const yearStart = subDays(now, 364);
         const daysMap = new Map<string, number>();
 
-        vocabularies.forEach(v => {
-            const dateStr = format(safeDate(v.createdAt), 'yyyy-MM-dd');
-            daysMap.set(dateStr, (daysMap.get(dateStr) || 0) + 1);
+        validVocabs.forEach(v => {
+            const date = safeDate(v.createdAt);
+            if (date) {
+                const dateStr = format(date, 'yyyy-MM-dd');
+                daysMap.set(dateStr, (daysMap.get(dateStr) || 0) + 1);
+            }
         });
 
         const heatmapData = [];
@@ -105,14 +111,16 @@ export default function AdminDashboard() {
             heatmapData.push({ date: day, count, dateStr });
         }
 
-        // 3. Hourly Distribution
+        // 4. Hourly Distribution
         const hourlyDist = new Array(24).fill(0);
         const dayOfWeekDist = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(name => ({ name, count: 0 }));
 
-        vocabularies.forEach(v => {
+        validVocabs.forEach(v => {
             const d = safeDate(v.createdAt);
-            hourlyDist[getHours(d)]++;
-            dayOfWeekDist[getDay(d)].count++;
+            if (d) {
+                hourlyDist[getHours(d)]++;
+                dayOfWeekDist[getDay(d)].count++;
+            }
         });
 
         const hourlyData = hourlyDist.map((count, hour) => ({
@@ -120,53 +128,104 @@ export default function AdminDashboard() {
             count
         }));
 
-        // 4. POS Distribution
-        const posCalc = vocabularies.reduce((acc, curr) => {
-            const pos = curr.partOfSpeech || 'unknown';
-            acc[pos] = (acc[pos] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
+        // 5. POS Distribution
+        const predefinedPOS = partOfSpeechData;
+        const posCalc: Record<string, number> = {};
 
+        // Initialize all categories to 0
+        predefinedPOS.forEach(pos => posCalc[pos] = 0);
+
+        vocabularies.forEach(curr => {
+            const rawPos = curr.partOfSpeech?.trim();
+            if (!rawPos) return;
+
+            // Try to find a match in our predefined list (case-insensitive)
+            const matchedKey = predefinedPOS.find(p => p.toLowerCase() === rawPos.toLowerCase());
+
+            if (matchedKey) {
+                posCalc[matchedKey]++;
+            }
+        });
+
+        // Filter out categories with 0 count to keep chart clean?
+        // Or keep them to show gaps in data? Let's hide 0s for cleaner chart.
         const pieData = Object.entries(posCalc)
-            .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }))
+            .filter(([_, value]) => value > 0)
+            .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value);
 
-        // 5. Growth Data
+        // 6. Growth Data
         const growthDays = timeRange === 'week' ? 7 : 30;
         const growthData = [];
         for (let i = growthDays - 1; i >= 0; i--) {
             const date = subDays(now, i);
             const dayStr = format(date, 'MMM dd');
             const dateStr = format(date, 'yyyy-MM-dd');
-            const count = vocabularies.filter(v => format(safeDate(v.createdAt), 'yyyy-MM-dd') === dateStr).length;
+            // Count words added on this specific day
+            const addedCount = validVocabs.filter(v => {
+                const d = safeDate(v.createdAt);
+                return d && format(d, 'yyyy-MM-dd') === dateStr;
+            }).length;
+
+            // Count resources added on this specific day
+            const resourcesCount = resources.filter((r: any) => {
+                const d = safeDate(r.createdAt);
+                return d && format(d, 'yyyy-MM-dd') === dateStr;
+            }).length;
+
             growthData.push({
                 date: dayStr,
-                words: count,
+                words: addedCount,
+                resources: resourcesCount,
+                total: addedCount + resourcesCount,
                 fullDate: date
             });
         }
 
-        // 6. Recent
-        const recentWords = [...vocabularies]
-            .sort((a, b) => safeDate(b.createdAt).getTime() - safeDate(a.createdAt).getTime())
-            .slice(0, 6);
+        // 7. Recent Items (Mixed Vocab and Resources)
+        const vocabularyItems = vocabularies.map(v => ({ ...v, type: 'vocabulary' }));
+        const resourceItems = resources.map((r: any) => ({ ...r, type: 'resource', english: r.title || 'Untitled Resource', bangla: 'Resource' }));
 
-        const addedToday = vocabularies.filter(v => isSameDay(safeDate(v.createdAt), now)).length;
+        const allItems = [...vocabularyItems, ...resourceItems];
+
+        const recentActivity = allItems
+            .filter(item => safeDate(item.createdAt) !== null)
+            .sort((a, b) => {
+                const dateA = safeDate(a.createdAt)!;
+                const dateB = safeDate(b.createdAt)!;
+                return dateB.getTime() - dateA.getTime();
+            })
+            .slice(0, 10);
+
+        const wordsAddedToday = validVocabs.filter(v => {
+            const d = safeDate(v.createdAt);
+            return d && isSameDay(d, now);
+        }).length;
+
+        const resourcesAddedToday = resources.filter((r: any) => {
+            const d = safeDate(r.createdAt);
+            return d && isSameDay(d, now);
+        }).length;
 
         return {
             totalWords,
-            addedToday,
+            totalResources,
+            wordsAddedToday,
+            resourcesAddedToday,
+            activeUsers,
             pieData,
             growthData,
-            recentWords,
+            recentActivity,
             qualityScores,
             heatmapData,
             maxCount,
             hourlyData,
             dayOfWeekDist,
-            counts: { withAudio, withExamples, withSynonyms }
+            counts: { withExamples, withSynonyms }
         };
-    }, [vocabularies, timeRange]);
+    }, [vocabularies, resources, timeRange]);
+
+    const isLoading = isLoadingVocabs || isLoadingResources;
 
     if (isLoading) {
         return (
@@ -182,10 +241,10 @@ export default function AdminDashboard() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                     <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                        Dashboard
+                        Analytics
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Analytics and performance overview
+                        System overview and detailed analytics
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -201,7 +260,7 @@ export default function AdminDashboard() {
                     </Button>
                     <Button variant="default" size="sm">
                         <Download className="mr-2 h-4 w-4" />
-                        Export
+                        Export Report
                     </Button>
                 </div>
             </div>
@@ -210,7 +269,7 @@ export default function AdminDashboard() {
                 <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                    <TabsTrigger value="quality">Quality Health</TabsTrigger>
+                    <TabsTrigger value="content">Content Health</TabsTrigger>
                 </TabsList>
 
                 {/* OVERVIEW TAB */}
@@ -218,32 +277,32 @@ export default function AdminDashboard() {
                     {/* Hero Stats */}
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <StatCard
-                            title="Total Words"
+                            title="Total Vocabulary"
                             value={stats?.totalWords.toLocaleString() || '0'}
                             icon={BookOpen}
-                            trend={`+${stats?.addedToday || 0} today`}
+                            trend={`+${stats?.wordsAddedToday || 0} today`}
                             trendUp={true}
                             color="text-blue-500"
                         />
                         <StatCard
-                            title="Added Today"
-                            value={stats?.addedToday.toString() || '0'}
-                            icon={Activity}
-                            subtext="New entries"
-                            color="text-green-500"
-                        />
-                        <StatCard
-                            title="Data Quality"
-                            value={`${stats?.qualityScores.overall}%`}
-                            icon={CheckCircle2}
-                            subtext="Completeness Score"
+                            title="Total Resources"
+                            value={stats?.totalResources.toLocaleString() || '0'}
+                            icon={ImageIcon}
+                            trend={`+${stats?.resourcesAddedToday || 0} today`}
                             color="text-purple-500"
                         />
                         <StatCard
-                            title="Top Category"
-                            value={stats?.pieData[0]?.name || 'N/A'}
-                            icon={Type}
-                            subtext={`${stats?.pieData[0]?.value || 0} words`}
+                            title="Active Users"
+                            value={stats?.activeUsers.toString() || '0'}
+                            icon={Users}
+                            subtext="Contributors"
+                            color="text-green-500"
+                        />
+                        <StatCard
+                            title="System Health"
+                            value={`${stats?.qualityScores.overall}%`}
+                            icon={Database}
+                            subtext="Data Quality"
                             color="text-orange-500"
                         />
                     </div>
@@ -253,21 +312,26 @@ export default function AdminDashboard() {
                         <Card className="md:col-span-4 shadow-md">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
-                                    <CardTitle>Activity Trends</CardTitle>
+                                    <CardTitle>Content Growth</CardTitle>
                                     <div className="flex gap-1">
                                         <Button variant={timeRange === 'week' ? 'secondary' : 'ghost'} size="xs" onClick={() => setTimeRange('week')}>7d</Button>
                                         <Button variant={timeRange === 'month' ? 'secondary' : 'ghost'} size="xs" onClick={() => setTimeRange('month')}>30d</Button>
                                     </div>
                                 </div>
+                                <CardDescription>Words and Resources added over time</CardDescription>
                             </CardHeader>
                             <CardContent className="pl-0">
                                 <div className="h-[300px] w-full">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={stats?.growthData}>
                                             <defs>
-                                                <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
+                                                <linearGradient id="colorWords" x1="0" y1="0" x2="0" y2="1">
                                                     <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
                                                     <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                                                </linearGradient>
+                                                <linearGradient id="colorResources" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
+                                                    <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
                                                 </linearGradient>
                                             </defs>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
@@ -276,7 +340,8 @@ export default function AdminDashboard() {
                                             <Tooltip
                                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                                             />
-                                            <Area type="monotone" dataKey="words" stroke="#8884d8" fillOpacity={1} fill="url(#colorGrowth)" />
+                                            <Area type="monotone" dataKey="words" name="Vocabulary" stroke="#8884d8" fillOpacity={1} fill="url(#colorWords)" />
+                                            <Area type="monotone" dataKey="resources" name="Resources" stroke="#82ca9d" fillOpacity={1} fill="url(#colorResources)" />
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -286,27 +351,35 @@ export default function AdminDashboard() {
                         {/* Recent Activity List */}
                         <Card className="md:col-span-3 shadow-md flex flex-col">
                             <CardHeader>
-                                <CardTitle>Recent Additions</CardTitle>
-                                <CardDescription>Latest vocabulary entries</CardDescription>
+                                <CardTitle>Recent Activity</CardTitle>
+                                <CardDescription>Latest system updates</CardDescription>
                             </CardHeader>
                             <CardContent className="flex-1 overflow-auto pr-2">
                                 <div className="space-y-4">
-                                    {stats?.recentWords.map((word, i) => (
-                                        <div key={word.id} className="flex items-center justify-between group">
+                                    {stats?.recentActivity.map((item: any, i: number) => (
+                                        <div key={item.id} className="flex items-center justify-between group">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm group-hover:scale-110 transition-transform">
-                                                    {i + 1}
+                                                <div className={cn(
+                                                    "h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold transition-transform group-hover:scale-110",
+                                                    item.type === 'resource' ? "bg-purple-100 text-purple-600" : "bg-blue-100 text-blue-600"
+                                                )}>
+                                                    {item.type === 'resource' ? <ImageIcon className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-sm">{word.english}</p>
-                                                    <p className="text-xs text-muted-foreground">{word.partOfSpeech}</p>
+                                                    <p className="font-semibold text-sm truncate max-w-[120px]">{item.english}</p>
+                                                    <p className="text-xs text-muted-foreground capitalize">
+                                                        {item.type === 'resource' ? 'Resource' : item.partOfSpeech}
+                                                        {item.type === 'vocabulary' && (
+                                                            <span className="ml-1 opacity-70"> • {item.bangla}</span>
+                                                        )}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="font-medium font-bengali text-sm">{word.bangla}</p>
-                                                <p className="text-[10px] text-muted-foreground">
-                                                    {format(safeDate(word.createdAt), 'MMM d, h:mm a')}
-                                                </p>
+                                                <div className="flex items-center justify-end gap-1 text-[10px] text-muted-foreground">
+                                                    <Clock className="h-3 w-3" />
+                                                    {safeDate(item.createdAt) ? format(safeDate(item.createdAt)!, 'MMM d, h:mm a') : 'Unknown'}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -323,14 +396,14 @@ export default function AdminDashboard() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <CalendarIcon className="h-5 w-5" />
-                                Contribution Activity
+                                Contribution Heatmap
                             </CardTitle>
-                            <CardDescription>Daily vocabulary contributions over the last year</CardDescription>
+                            <CardDescription>Daily activity intensity over the last year</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-wrap gap-1 justify-center sm:justify-start">
                                 {stats?.heatmapData.map((day, i) => (
-                                    <Tooltip key={i} content={`${day.count} words on ${format(day.date, 'MMM do, yyyy')}`}>
+                                    <Tooltip key={i} content={`${day.count} items on ${format(day.date, 'MMM do, yyyy')}`}>
                                         <div
                                             className={cn(
                                                 "w-3 h-3 rounded-[2px] transition-colors hover:ring-2 hover:ring-offset-1 hover:ring-primary/50",
@@ -339,7 +412,6 @@ export default function AdminDashboard() {
                                                         day.count < 5 ? "bg-green-400 dark:bg-green-700/60" :
                                                             "bg-green-600 dark:bg-green-500"
                                             )}
-                                            title={`${day.count} words on ${day.dateStr}`}
                                         />
                                     </Tooltip>
                                 ))}
@@ -352,7 +424,7 @@ export default function AdminDashboard() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Weekly Habits</CardTitle>
-                                <CardDescription>Words added by day of the week</CardDescription>
+                                <CardDescription>Activity by day of the week</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="h-[250px]">
@@ -376,7 +448,7 @@ export default function AdminDashboard() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Peak Hours</CardTitle>
-                                <CardDescription>Activity time distribution (Current User)</CardDescription>
+                                <CardDescription>Activity time distribution</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="h-[250px]">
@@ -400,8 +472,8 @@ export default function AdminDashboard() {
                     {/* POS Distribution Full */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Vocabulary Composition</CardTitle>
-                            <CardDescription>Part of Speech breakdown</CardDescription>
+                            <CardTitle>Vocabulary Breakdown</CardTitle>
+                            <CardDescription>Distribution by Part of Speech</CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col sm:flex-row items-center justify-around">
                             <div className="h-[300px] w-full sm:w-1/2">
@@ -442,16 +514,9 @@ export default function AdminDashboard() {
                     </Card>
                 </TabsContent>
 
-                {/* QUALITY TAB */}
-                <TabsContent value="quality" className="space-y-6">
-                    <div className="grid gap-6 md:grid-cols-3">
-                        <QualityCard
-                            title="Audio Coverage"
-                            score={stats?.qualityScores.audio || 0}
-                            icon={Headphones}
-                            description={`${stats?.counts.withAudio} words have audio pronunciations`}
-                            color="bg-blue-500"
-                        />
+                {/* CONTENT HEALTH TAB (Renamed from Quality) */}
+                <TabsContent value="content" className="space-y-6">
+                    <div className="grid gap-6 md:grid-cols-2">
                         <QualityCard
                             title="Example Usage"
                             score={stats?.qualityScores.examples || 0}
@@ -462,7 +527,7 @@ export default function AdminDashboard() {
                         <QualityCard
                             title="Synonyms & Antonyms"
                             score={stats?.qualityScores.synonyms || 0}
-                            icon={Layers}
+                            icon={Type}
                             description={`${stats?.counts.withSynonyms} words have related terms`}
                             color="bg-purple-500"
                         />
@@ -472,17 +537,12 @@ export default function AdminDashboard() {
                         <CardHeader>
                             <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
                                 <AlertCircle className="h-5 w-5" />
-                                <CardTitle>Suggested Improvements</CardTitle>
+                                <CardTitle>Content Improvements</CardTitle>
                             </div>
                             <CardDescription>Actionable insights to improve your database</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="space-y-2 text-sm">
-                                {stats?.qualityScores.audio < 100 && (
-                                    <li className="flex items-center gap-2 opacity-80">
-                                        • Add audio pronunciations to <strong>{stats?.totalWords - stats?.counts.withAudio}</strong> words.
-                                    </li>
-                                )}
                                 {stats?.qualityScores.examples < 90 && (
                                     <li className="flex items-center gap-2 opacity-80">
                                         • Add example sentences to <strong>{stats?.totalWords - stats?.counts.withExamples}</strong> words to improve context.
@@ -491,10 +551,10 @@ export default function AdminDashboard() {
                                 <li className="flex items-center gap-2 opacity-80">
                                     • Review <strong>Uncategorized</strong> items to ensure better searching.
                                 </li>
+                                <li className="flex items-center gap-2 opacity-80">
+                                    • Check for <strong>Duplicate</strong> entries in the tools section.
+                                </li>
                             </ul>
-                            <Button variant="outline" className="mt-4 border-orange-200 hover:bg-orange-100 dark:border-orange-800 dark:hover:bg-orange-900">
-                                View To-Do List
-                            </Button>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -515,9 +575,9 @@ function StatCard({ title, value, icon: Icon, trend, trendUp, subtext, color }: 
                 <CardContent>
                     <div className="text-2xl font-bold">{value}</div>
                     {(trend || subtext) && (
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                            {trend}
-                            {subtext}
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            {trend && <span className={trendUp ? "text-green-500 font-medium" : ""}>{trend}</span>}
+                            {subtext && <span>{subtext}</span>}
                         </p>
                     )}
                 </CardContent>

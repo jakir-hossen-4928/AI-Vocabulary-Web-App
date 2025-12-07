@@ -424,16 +424,16 @@ export default function Vocabularies() {
               )}
 
               {/* Voice & Language Controls Group */}
-              <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10 bg-black/5 rounded-full p-0.5 sm:p-1 backdrop-blur-[2px]">
+              <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1 z-10 bg-transparent sm:bg-black/5 rounded-full p-0 sm:p-1 sm:backdrop-blur-[2px]">
                 <button
                   onClick={toggleLanguage}
                   className="
                     flex items-center justify-center
-                    px-2 h-7 sm:h-8 min-w-[32px] sm:min-w-[36px]
-                    text-[10px] sm:text-xs font-bold
+                    px-1.5 sm:px-2 h-6 sm:h-8 min-w-[26px] sm:min-w-[36px]
+                    text-[9px] sm:text-xs font-bold
                     rounded-full transition-all duration-200
                     bg-primary-foreground/10 hover:bg-primary-foreground/20
-                    text-primary-foreground border border-primary-foreground/10
+                    text-primary-foreground border-0 sm:border border-primary-foreground/10
                     active:scale-95 select-none shadow-sm
                   "
                   title={`Switch language (Current: ${language === 'en-US' ? 'English' : 'Bangla'})`}
@@ -441,14 +441,14 @@ export default function Vocabularies() {
                   {language === 'en-US' ? 'EN' : 'BN'}
                 </button>
 
-                <div className="w-px h-3 bg-primary-foreground/10 mx-0.5" />
+                <div className="w-px h-3 bg-primary-foreground/10 mx-0.5 hidden sm:block" />
 
                 <button
                   onClick={startListening}
                   disabled={isListening}
                   className={`
                     flex items-center justify-center rounded-full transition-all duration-300
-                    h-7 w-7 sm:h-8 sm:w-8
+                    h-6 w-6 sm:h-8 sm:w-8
                     ${isListening
                       ? 'bg-red-500 text-white shadow-lg scale-110'
                       : 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10'
@@ -457,7 +457,7 @@ export default function Vocabularies() {
                   aria-label="Voice search"
                   title="Voice search"
                 >
-                  <Mic className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isListening ? 'animate-pulse' : ''}`} />
+                  <Mic className={`h-3 w-3 sm:h-4 sm:w-4 ${isListening ? 'animate-pulse' : ''}`} />
                 </button>
               </div>
             </div>

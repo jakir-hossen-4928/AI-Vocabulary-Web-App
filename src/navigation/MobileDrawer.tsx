@@ -1,6 +1,6 @@
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield, Layers, Upload, Heart, Plus, Wand2 } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield, Layers, Upload, Heart, Plus, Wand2, LayoutDashboard } from "lucide-react";
 import { NavLink } from "@/navigation/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "firebase/auth";
@@ -143,6 +143,15 @@ export const MobileDrawer = ({ open, onOpenChange }: MobileDrawerProps) => {
                                     Admin
                                 </p>
                             </div>
+                            <NavLink
+                                to="/admin/analytics"
+                                onClick={() => onOpenChange(false)}
+                                className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                                activeClassName="bg-primary/10 text-primary font-medium"
+                            >
+                                <LayoutDashboard className="h-5 w-5" />
+                                <span>Analytics</span>
+                            </NavLink>
                             <NavLink
                                 to="/vocabularies/add"
                                 onClick={() => onOpenChange(false)}
