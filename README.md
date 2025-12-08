@@ -1,4 +1,4 @@
-# AI Vocabulary Coach 📚
+# AI Vocabulary App📚
 
 A modern, AI-powered vocabulary learning application designed to help Bengali speakers master English vocabulary, specifically tailored for IELTS Band 7+ preparation.
 
