@@ -1,4 +1,4 @@
-import { Volume2, Heart, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { Volume2, Heart, Trash2, Sparkles, Loader2, Languages, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,8 @@ import { Vocabulary } from "@/types/vocabulary";
 import { speakText } from "@/services/ttsService";
 import { confirmAction, showSuccessToast } from "@/utils/sweetAlert";
 import { memo, useState } from "react";
+import { translateText } from "@/services/googleTranslateService";
+import { toast } from "sonner";
 
 interface VocabCardProps {
   vocab: Vocabulary;
@@ -15,6 +17,7 @@ interface VocabCardProps {
   index?: number;
   onDelete?: (id: string) => void;
   onImproveMeaning?: (id: string) => Promise<void>;
+  onTranslate?: (vocab: Vocabulary) => void;
   isAdmin?: boolean;
   style?: React.CSSProperties;
   className?: string;
@@ -42,11 +45,15 @@ export const VocabCard = memo(({
   onClick,
   onDelete,
   onImproveMeaning,
+  onTranslate,
   isAdmin = false,
   style,
   className
 }: VocabCardProps) => {
   const [isImproving, setIsImproving] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedWord, setTranslatedWord] = useState<string>("");
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -88,7 +95,39 @@ export const VocabCard = memo(({
     }
   };
 
-  const banglaTextSize = getBanglaTextSize(vocab.bangla);
+  const handleTranslate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (showTranslation) {
+      setShowTranslation(false);
+      return;
+    }
+
+    if (translatedWord) {
+      setShowTranslation(true);
+      return;
+    }
+
+    setIsTranslating(true);
+    setShowTranslation(true);
+
+    try {
+      // Only translate the main word as requested
+      const result = await translateText(vocab.english);
+      setTranslatedWord(result.translatedText);
+    } catch (error) {
+      toast.error("Translation failed. Please try again.");
+      setShowTranslation(false);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  // For online results, vocab.bangla is the definition
+  // When translated, we show the translated WORD in the big text area
+  const displayBangla = (showTranslation && translatedWord) ? translatedWord : vocab.bangla;
+
+  const banglaTextSize = getBanglaTextSize(displayBangla);
   const englishTextSize = getEnglishTextSize(vocab.english);
 
   return (
@@ -103,8 +142,11 @@ export const VocabCard = memo(({
         <div className="flex justify-between items-start mb-2 sm:mb-3 gap-2">
           <div className="flex-1 min-w-0 pr-1">
             <div className="flex items-start sm:items-center gap-1 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
-              <h3 className={`${banglaTextSize} font-bold text-foreground break-words leading-tight`}>
-                {vocab.bangla}
+              <h3 className={`${banglaTextSize} font-bold text-foreground break-words leading-tight flex items-center gap-2`}>
+                {displayBangla}
+                {isTranslating && (
+                  <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                )}
               </h3>
               {onImproveMeaning && !vocab.isOnline && (
                 <Button
@@ -145,6 +187,22 @@ export const VocabCard = memo(({
             >
               <Volume2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
+            {vocab.isOnline && onTranslate && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleTranslate}
+                className={`h-7 w-7 sm:h-8 sm:w-8 ${showTranslation ? 'bg-blue-100 text-blue-700' : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'}`}
+                title={showTranslation ? "Show original" : "Show Bangla meaning"}
+                disabled={isTranslating}
+              >
+                {showTranslation ? (
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                ) : (
+                  <Languages className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                )}
+              </Button>
+            )}
             {!vocab.isOnline && (
               <Button
                 variant="ghost"

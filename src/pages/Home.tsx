@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Sparkles, Zap, Loader2, X, Globe, Mic } from "lucide-react";
+import { Search, Sparkles, Zap, Loader2, X, Globe, Mic, Languages } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -154,6 +154,11 @@ export default function Home() {
     setIsChatOpen(true);
   };
 
+  const handleTranslate = (vocab: Vocabulary) => {
+    // Translation is now handled inline in VocabCard
+    // This function is kept for compatibility but does nothing
+  };
+
   const filteredVocabs = debouncedSearch.trim()
     ? vocabularies.filter(v =>
       v.bangla.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -298,9 +303,9 @@ export default function Home() {
                     <>
                       Search Results ({allResults.length})
                       {onlineResults.length > 0 && (
-                        <Badge variant="secondary" className="ml-2">
+                        <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700 hover:bg-blue-200">
                           <Globe className="h-3 w-3 mr-1" />
-                          Online
+                          Online • Click <Languages className="h-3 w-3 mx-0.5 inline" /> for বাংলা
                         </Badge>
                       )}
                     </>
@@ -339,6 +344,7 @@ export default function Home() {
                         }
                       }}
                       onImproveMeaning={vocab.isOnline ? undefined : handleImproveMeaning}
+                      onTranslate={vocab.isOnline ? handleTranslate : undefined}
                     />
                   ))}
                 </div>
