@@ -16,21 +16,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Plus, Trash2, Wand2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2, Wand2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { generateVocabularyFromWord } from "@/services/openaiService";
-import { useVocabularyMutations } from "@/hooks/useVocabularies";
+import { useVocabularyMutations, useVocabularies } from "@/hooks/useVocabularies";
 import { motion } from "framer-motion";
 import PARTS_OF_SPEECH from "@/data/partOfSpeech.json";
+import { checkVocabularyDuplicate } from "@/utils/vocabularyDuplicateChecker";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function AddVocabulary() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { addVocabulary, updateVocabulary } = useVocabularyMutations();
+  const { data: existingVocabularies = [] } = useVocabularies();
 
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateCheckResult, setDuplicateCheckResult] = useState<{
+    isDuplicate: boolean;
+    duplicates: Vocabulary[];
+    message: string;
+  } | null>(null);
   const [formData, setFormData] = useState<Partial<Vocabulary>>({
     bangla: "",
     english: "",
@@ -118,6 +136,33 @@ export default function AddVocabulary() {
       return;
     }
 
+    // Skip duplicate check if we're editing an existing vocabulary
+    if (!id) {
+      // Check for duplicates before adding
+      const duplicateCheck = checkVocabularyDuplicate(
+        {
+          english: formData.english,
+          partOfSpeech: formData.partOfSpeech
+        },
+        existingVocabularies
+      );
+
+      if (duplicateCheck.isDuplicate) {
+        // Show duplicate warning dialog
+        setDuplicateCheckResult(duplicateCheck);
+        setShowDuplicateDialog(true);
+        return;
+      } else if (duplicateCheck.duplicates.length > 0) {
+        // Same word but different part of speech - show info and proceed
+        toast.info(duplicateCheck.message, { duration: 5000 });
+      }
+    }
+
+    // Proceed with save
+    await saveVocabulary();
+  };
+
+  const saveVocabulary = async () => {
     try {
       setLoading(true);
 
@@ -152,6 +197,11 @@ export default function AddVocabulary() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConfirmDuplicateAdd = async () => {
+    setShowDuplicateDialog(false);
+    await saveVocabulary();
   };
 
   const addExample = () => {
@@ -561,6 +611,42 @@ export default function AddVocabulary() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Duplicate Warning Dialog */}
+      <AlertDialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Duplicate Vocabulary Detected
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>{duplicateCheckResult?.message}</p>
+              {duplicateCheckResult?.duplicates && duplicateCheckResult.duplicates.length > 0 && (
+                <div className="mt-3 p-3 bg-muted rounded-lg">
+                  <p className="font-semibold text-sm mb-2">Existing entries:</p>
+                  {duplicateCheckResult.duplicates.map((dup, idx) => (
+                    <div key={idx} className="text-sm space-y-1 mb-2 pb-2 border-b last:border-0">
+                      <p><strong>English:</strong> {dup.english}</p>
+                      <p><strong>Bangla:</strong> {dup.bangla}</p>
+                      <p><strong>Part of Speech:</strong> {dup.partOfSpeech}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-sm text-muted-foreground mt-3">
+                Do you want to add this vocabulary anyway? This will create a duplicate entry.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDuplicateAdd}>
+              Add Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

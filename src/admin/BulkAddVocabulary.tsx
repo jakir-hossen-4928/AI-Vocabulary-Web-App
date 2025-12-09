@@ -16,6 +16,8 @@ import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { useVocabularies } from "@/hooks/useVocabularies";
+import { checkBulkVocabularyDuplicates, getDuplicateStats, filterNonDuplicates } from "@/utils/vocabularyDuplicateChecker";
 
 interface BulkVocabulary {
     english: string;
@@ -231,6 +233,7 @@ export default function BulkAddVocabulary() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { user, isAdmin } = useAuth();
+    const { data: existingVocabularies = [] } = useVocabularies();
     const [loading, setLoading] = useState(false);
     const [jsonInput, setJsonInput] = useState("");
     const [csvInput, setCsvInput] = useState("");
@@ -246,6 +249,8 @@ export default function BulkAddVocabulary() {
         invalid: number;
         errors: string[];
         vocabularies: BulkVocabulary[];
+        duplicates?: number;
+        duplicateList?: Array<{ index: number; vocabulary: BulkVocabulary; duplicates: Vocabulary[] }>;
     } | null>(null);
 
     if (!user || !isAdmin) {
@@ -455,16 +460,32 @@ export default function BulkAddVocabulary() {
             }
         });
 
+        // Check for duplicates in valid vocabularies
+        const duplicateCheckResults = checkBulkVocabularyDuplicates(validVocabs, existingVocabularies);
+        const duplicateStats = getDuplicateStats(duplicateCheckResults);
+
+        // Filter out duplicates from the list
+        const duplicateEntries = duplicateCheckResults.filter(r => r.isDuplicate);
+
         setValidationPreview({
             total: vocabularies.length,
             valid: validVocabs.length,
             invalid: errors.length,
             errors,
             vocabularies: validVocabs,
+            duplicates: duplicateStats.duplicates,
+            duplicateList: duplicateEntries.map(d => ({
+                index: d.index,
+                vocabulary: d.vocabulary as BulkVocabulary,
+                duplicates: d.duplicates
+            }))
         });
 
         if (validVocabs.length > 0) {
-            toast.success(`Validation complete: ${validVocabs.length} valid, ${errors.length} invalid`);
+            const duplicateMsg = duplicateStats.duplicates > 0
+                ? `, ${duplicateStats.duplicates} duplicate(s) detected`
+                : "";
+            toast.success(`Validation complete: ${validVocabs.length} valid, ${errors.length} invalid${duplicateMsg}`);
         } else {
             toast.error("No valid vocabularies found");
         }
@@ -475,7 +496,30 @@ export default function BulkAddVocabulary() {
             toast.error("No valid vocabularies to upload");
             return;
         }
-        await handleBulkUpload(validationPreview.vocabularies);
+
+        // Filter out duplicates before uploading
+        const duplicateCheckResults = checkBulkVocabularyDuplicates(
+            validationPreview.vocabularies,
+            existingVocabularies
+        );
+        const nonDuplicateVocabs = filterNonDuplicates(
+            validationPreview.vocabularies,
+            duplicateCheckResults
+        );
+
+        if (nonDuplicateVocabs.length === 0) {
+            toast.error("All vocabularies are duplicates. Nothing to upload.");
+            return;
+        }
+
+        if (nonDuplicateVocabs.length < validationPreview.vocabularies.length) {
+            const skipped = validationPreview.vocabularies.length - nonDuplicateVocabs.length;
+            toast.warning(`Skipping ${skipped} duplicate(s). Uploading ${nonDuplicateVocabs.length} unique vocabularies.`, {
+                duration: 5000
+            });
+        }
+
+        await handleBulkUpload(nonDuplicateVocabs);
         setValidationPreview(null);
     };
 
@@ -715,6 +759,30 @@ export default function BulkAddVocabulary() {
                                     </Alert>
                                 )}
 
+                                {/* Duplicate Detection Alert */}
+                                {validationPreview.duplicates && validationPreview.duplicates > 0 && (
+                                    <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+                                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        <AlertTitle className="text-sm sm:text-base text-amber-900 dark:text-amber-100">Duplicate Entries Detected</AlertTitle>
+                                        <AlertDescription className="text-xs sm:text-sm text-amber-800 dark:text-amber-200">
+                                            <p className="mb-2">Found {validationPreview.duplicates} duplicate(s) that already exist in the database:</p>
+                                            <div className="max-h-40 overflow-y-auto space-y-2">
+                                                {validationPreview.duplicateList?.slice(0, 5).map((dup, idx) => (
+                                                    <div key={idx} className="text-xs p-2 bg-background/50 rounded border border-amber-200 dark:border-amber-800">
+                                                        <p><strong>Row {dup.index + 1}:</strong> "{dup.vocabulary.english}" ({dup.vocabulary.partOfSpeech})</p>
+                                                        <p className="text-muted-foreground">Matches existing: {dup.duplicates.map(d => d.bangla).join(", ")}</p>
+                                                    </div>
+                                                ))}
+                                                {validationPreview.duplicateList && validationPreview.duplicateList.length > 5 && (
+                                                    <p className="text-xs text-muted-foreground">...and {validationPreview.duplicateList.length - 5} more duplicates</p>
+                                                )}
+                                            </div>
+                                            <p className="mt-3 text-xs font-semibold">These duplicates will be automatically skipped during upload.</p>
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
+
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <Button
                                         variant="outline"
@@ -736,7 +804,10 @@ export default function BulkAddVocabulary() {
                                         ) : (
                                             <>
                                                 <Upload className="mr-2 h-4 w-4" />
-                                                Upload {validationPreview.valid} Valid {validationPreview.valid === 1 ? 'Entry' : 'Entries'}
+                                                {(() => {
+                                                    const uniqueCount = validationPreview.valid - (validationPreview.duplicates || 0);
+                                                    return `Upload ${uniqueCount} ${uniqueCount === 1 ? 'Entry' : 'Entries'}${validationPreview.duplicates ? ` (${validationPreview.duplicates} skipped)` : ''}`;
+                                                })()}
                                             </>
                                         )}
                                     </Button>

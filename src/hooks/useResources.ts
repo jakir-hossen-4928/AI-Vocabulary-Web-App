@@ -144,32 +144,39 @@ export const useResourceMutations = () => {
             return { id: docRef.id, ...newResource };
         },
         onSuccess: async (newResource) => {
-            // Update Dexie cache
-            await dexieService.addResource(newResource);
-            await dexieService.updateSyncMetadata(SYNC_KEY);
+            // Update caches asynchronously without blocking UI
+            Promise.all([
+                // Update Dexie cache (non-blocking)
+                dexieService.addResource(newResource)
+                    .then(() => dexieService.updateSyncMetadata(SYNC_KEY))
+                    .then(() => console.log('[Dexie] Added new resource to cache'))
+                    .catch(err => console.error('[Dexie] Failed to cache resource:', err)),
 
-            // Update simple query cache
-            queryClient.setQueryData(["resources-simple"], (oldData: GrammarImage[] | undefined) => {
-                if (!oldData) return [newResource];
-                return [newResource, ...oldData];
-            });
+                // Update React Query caches immediately
+                Promise.resolve().then(() => {
+                    // Update simple query cache
+                    queryClient.setQueryData(["resources-simple"], (oldData: GrammarImage[] | undefined) => {
+                        if (!oldData) return [newResource];
+                        return [newResource, ...oldData];
+                    });
 
-            // Update paginated query cache
-            queryClient.setQueryData(["resources", ""], (oldData: any) => {
-                if (!oldData) return oldData;
-                return {
-                    ...oldData,
-                    pages: [
-                        {
-                            ...oldData.pages[0],
-                            items: [newResource, ...oldData.pages[0].items],
-                        },
-                        ...oldData.pages.slice(1),
-                    ],
-                };
-            });
+                    // Update paginated query cache
+                    queryClient.setQueryData(["resources", ""], (oldData: any) => {
+                        if (!oldData) return oldData;
+                        return {
+                            ...oldData,
+                            pages: [
+                                {
+                                    ...oldData.pages[0],
+                                    items: [newResource, ...oldData.pages[0].items],
+                                },
+                                ...oldData.pages.slice(1),
+                            ],
+                        };
+                    });
+                })
+            ]);
 
-            console.log('[Dexie] Added new resource to cache');
             toast.success("Resource added successfully");
         },
         onError: (error: any) => {
@@ -184,39 +191,48 @@ export const useResourceMutations = () => {
             return { id, ...data };
         },
         onSuccess: async (updatedResource) => {
-            // Update Dexie cache
+            // Get current cache for merging
             const currentCache = queryClient.getQueryData<GrammarImage[]>(["resources-simple"]);
             const fullResource = currentCache?.find(r => r.id === updatedResource.id);
 
             if (fullResource) {
                 const mergedResource = { ...fullResource, ...updatedResource } as GrammarImage;
-                await dexieService.addResource(mergedResource);
-                await dexieService.updateSyncMetadata(SYNC_KEY);
 
-                // Update simple query cache
-                queryClient.setQueryData(["resources-simple"], (oldData: GrammarImage[] | undefined) => {
-                    if (!oldData) return oldData;
-                    return oldData.map((item) =>
-                        item.id === updatedResource.id ? mergedResource : item
-                    );
-                });
+                // Update caches asynchronously without blocking UI
+                Promise.all([
+                    // Update Dexie cache (non-blocking)
+                    dexieService.addResource(mergedResource)
+                        .then(() => dexieService.updateSyncMetadata(SYNC_KEY))
+                        .then(() => console.log('[Dexie] Updated resource in cache'))
+                        .catch(err => console.error('[Dexie] Failed to cache resource update:', err)),
+
+                    // Update React Query caches immediately
+                    Promise.resolve().then(() => {
+                        // Update simple query cache
+                        queryClient.setQueryData(["resources-simple"], (oldData: GrammarImage[] | undefined) => {
+                            if (!oldData) return oldData;
+                            return oldData.map((item) =>
+                                item.id === updatedResource.id ? mergedResource : item
+                            );
+                        });
+
+                        // Update paginated query cache
+                        queryClient.setQueriesData({ queryKey: ["resources"] }, (oldData: any) => {
+                            if (!oldData) return oldData;
+                            return {
+                                ...oldData,
+                                pages: oldData.pages.map((page: any) => ({
+                                    ...page,
+                                    items: page.items.map((item: GrammarImage) =>
+                                        item.id === updatedResource.id ? { ...item, ...updatedResource } : item
+                                    ),
+                                })),
+                            };
+                        });
+                    })
+                ]);
             }
 
-            // Update paginated query cache
-            queryClient.setQueriesData({ queryKey: ["resources"] }, (oldData: any) => {
-                if (!oldData) return oldData;
-                return {
-                    ...oldData,
-                    pages: oldData.pages.map((page: any) => ({
-                        ...page,
-                        items: page.items.map((item: GrammarImage) =>
-                            item.id === updatedResource.id ? { ...item, ...updatedResource } : item
-                        ),
-                    })),
-                };
-            });
-
-            console.log('[Dexie] Updated resource in cache');
             toast.success("Resource updated successfully");
         },
         onError: (error: any) => {
@@ -231,29 +247,36 @@ export const useResourceMutations = () => {
             return id;
         },
         onSuccess: async (deletedId) => {
-            // Update Dexie cache
-            await dexieService.deleteResource(deletedId);
-            await dexieService.updateSyncMetadata(SYNC_KEY);
+            // Update caches asynchronously without blocking UI
+            Promise.all([
+                // Update Dexie cache (non-blocking)
+                dexieService.deleteResource(deletedId)
+                    .then(() => dexieService.updateSyncMetadata(SYNC_KEY))
+                    .then(() => console.log('[Dexie] Deleted resource from cache'))
+                    .catch(err => console.error('[Dexie] Failed to delete from cache:', err)),
 
-            // Update simple query cache
-            queryClient.setQueryData(["resources-simple"], (oldData: GrammarImage[] | undefined) => {
-                if (!oldData) return oldData;
-                return oldData.filter((item) => item.id !== deletedId);
-            });
+                // Update React Query caches immediately
+                Promise.resolve().then(() => {
+                    // Update simple query cache
+                    queryClient.setQueryData(["resources-simple"], (oldData: GrammarImage[] | undefined) => {
+                        if (!oldData) return oldData;
+                        return oldData.filter((item) => item.id !== deletedId);
+                    });
 
-            // Update paginated query cache
-            queryClient.setQueriesData({ queryKey: ["resources"] }, (oldData: any) => {
-                if (!oldData) return oldData;
-                return {
-                    ...oldData,
-                    pages: oldData.pages.map((page: any) => ({
-                        ...page,
-                        items: page.items.filter((item: GrammarImage) => item.id !== deletedId),
-                    })),
-                };
-            });
+                    // Update paginated query cache
+                    queryClient.setQueriesData({ queryKey: ["resources"] }, (oldData: any) => {
+                        if (!oldData) return oldData;
+                        return {
+                            ...oldData,
+                            pages: oldData.pages.map((page: any) => ({
+                                ...page,
+                                items: page.items.filter((item: GrammarImage) => item.id !== deletedId),
+                            })),
+                        };
+                    });
+                })
+            ]);
 
-            console.log('[Dexie] Deleted resource from cache');
             toast.success("Resource deleted");
         },
         onError: (error: any) => {

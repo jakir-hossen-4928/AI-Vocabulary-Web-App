@@ -93,10 +93,11 @@ export default function AdminResourceGallery() {
             }
 
             await addResource.mutateAsync(docData);
-            showSuccessToast("Resource added successfully");
+            // Toast is shown by the mutation hook
             resetForm();
         } catch (error) {
             console.error("Error adding resource:", error);
+            // Error toast is shown by the mutation hook
         } finally {
             setUploading(false);
         }
@@ -119,10 +120,11 @@ export default function AdminResourceGallery() {
             }
 
             await updateResource.mutateAsync(updateData);
-            showSuccessToast("Resource updated successfully");
+            // Toast is shown by the mutation hook
             resetForm();
         } catch (error) {
             console.error("Error updating resource:", error);
+            // Error toast is shown by the mutation hook
         } finally {
             setUploading(false);
         }
@@ -136,12 +138,8 @@ export default function AdminResourceGallery() {
         );
 
         if (isConfirmed) {
-            try {
-                await deleteResource.mutateAsync(id);
-                showSuccessToast('Resource deleted successfully');
-            } catch (error) {
-                console.error("Error deleting resource:", error);
-            }
+            await deleteResource.mutateAsync(id);
+            // Toast is shown by the mutation hook
         }
     };
 
