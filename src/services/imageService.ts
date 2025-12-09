@@ -1,5 +1,12 @@
 
-export const uploadImage = async (file: File): Promise<string> => {
+export interface ImageUploadResponse {
+    url: string;
+    thumbnailUrl?: string;
+    mediumUrl?: string;
+    deleteUrl?: string;
+}
+
+export const uploadImage = async (file: File): Promise<ImageUploadResponse> => {
     const apiKey = import.meta.env.VITE_IMGBB_API_KEY;
     if (!apiKey) {
         throw new Error("ImgBB API key is missing");
@@ -18,5 +25,10 @@ export const uploadImage = async (file: File): Promise<string> => {
     }
 
     const data = await response.json();
-    return data.data.url;
+    return {
+        url: data.data.url,
+        thumbnailUrl: data.data.thumb?.url,
+        mediumUrl: data.data.medium?.url,
+        deleteUrl: data.data.delete_url
+    };
 };

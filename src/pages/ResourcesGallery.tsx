@@ -325,7 +325,7 @@ export default function ResourcesGallery() {
                                 {img.imageUrl ? (
                                   <>
                                     <img
-                                      src={img.imageUrl}
+                                      src={img.thumbnailUrl || img.imageUrl}
                                       alt={img.title}
                                       className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
                                       loading="lazy"

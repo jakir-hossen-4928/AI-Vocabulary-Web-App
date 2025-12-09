@@ -155,7 +155,24 @@ export default function ResourceDetail() {
                             prose-blockquote:border-l-primary prose-blockquote:bg-muted/50 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg
                             prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none"
                         >
-                            {isHtml ? parse(grammar.description) : <ReactMarkdown>{grammar.description}</ReactMarkdown>}
+                            {isHtml ? parse(grammar.description, {
+                                replace: (domNode) => {
+                                    if (domNode.type === 'tag' && domNode.name === 'img') {
+                                        const { attribs } = domNode;
+                                        // Ensure basic optimization attributes are present if not already
+                                        if (!attribs.loading) attribs.loading = 'lazy';
+                                        if (!attribs.decoding) attribs.decoding = 'async';
+                                        // Optional: add a class for smooth loading transition if you had CSS for it
+                                        return domNode;
+                                    }
+                                }
+                            }) : <ReactMarkdown
+                                components={{
+                                    img: (props) => (
+                                        <img {...props} loading="lazy" decoding="async" className="rounded-xl shadow-lg" />
+                                    )
+                                }}
+                            >{grammar.description}</ReactMarkdown>}
                         </div>
                     </motion.div>
                 )}

@@ -43,6 +43,8 @@ import {
 import { cleanTextContent } from "@/utils/textCleaner";
 import RichTextEditor from "@/components/RichTextEditor";
 
+import { processContentImages } from "@/utils/contentImageProcessor";
+
 export default function AdminResourceGallery() {
     const { user } = useAuth();
     const { data: images = [], isLoading: loading } = useResourcesSimple();
@@ -76,20 +78,29 @@ export default function AdminResourceGallery() {
 
         setUploading(true);
         try {
+            // Process description to extract and upload inline images
+            const processedDescription = await processContentImages(description);
+
             let imageUrl = "";
+            let thumbnailUrl = "";
             if (file) {
-                imageUrl = await uploadImage(file);
+                const uploadResponse = await uploadImage(file);
+                imageUrl = uploadResponse.url;
+                thumbnailUrl = uploadResponse.thumbnailUrl || "";
             }
 
             const docData: any = {
                 title: title.trim(),
-                description: cleanTextContent(description),
+                description: cleanTextContent(processedDescription), // Use processed description
                 createdAt: new Date().toISOString(),
                 userId: user!.uid
             };
 
             if (imageUrl) {
                 docData.imageUrl = imageUrl;
+            }
+            if (thumbnailUrl) {
+                docData.thumbnailUrl = thumbnailUrl;
             }
 
             await addResource.mutateAsync(docData);
@@ -108,15 +119,21 @@ export default function AdminResourceGallery() {
 
         setUploading(true);
         try {
+            // Process description to extract and upload inline images
+            const processedDescription = await processContentImages(description);
+
             const updateData: any = {
                 id: editingId,
                 title: title.trim(),
-                description: cleanTextContent(description),
+                description: cleanTextContent(processedDescription), // Use processed description
             };
 
             if (file) {
-                const imageUrl = await uploadImage(file);
-                updateData.imageUrl = imageUrl;
+                const uploadResponse = await uploadImage(file);
+                updateData.imageUrl = uploadResponse.url;
+                if (uploadResponse.thumbnailUrl) {
+                    updateData.thumbnailUrl = uploadResponse.thumbnailUrl;
+                }
             }
 
             await updateResource.mutateAsync(updateData);
@@ -227,7 +244,7 @@ export default function AdminResourceGallery() {
                                             <TableCell>
                                                 <div className="h-12 w-20 overflow-hidden rounded-md bg-muted flex items-center justify-center border">
                                                     {img.imageUrl ? (
-                                                        <img src={img.imageUrl} alt={img.title} className="h-full w-full object-cover" />
+                                                        <img src={img.thumbnailUrl || img.imageUrl} alt={img.title} className="h-full w-full object-cover" />
                                                     ) : (
                                                         <ImageIcon className="h-5 w-5 text-muted-foreground" />
                                                     )}
@@ -272,7 +289,7 @@ export default function AdminResourceGallery() {
                                 <Card key={img.id} className="p-4 flex gap-4 items-start">
                                     <div className="h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted flex items-center justify-center border">
                                         {img.imageUrl ? (
-                                            <img src={img.imageUrl} alt={img.title} className="h-full w-full object-cover" />
+                                            <img src={img.thumbnailUrl || img.imageUrl} alt={img.title} className="h-full w-full object-cover" />
                                         ) : (
                                             <ImageIcon className="h-8 w-8 text-muted-foreground" />
                                         )}
