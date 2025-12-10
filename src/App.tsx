@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { lazy, Suspense } from "react";
@@ -116,12 +117,19 @@ const App = () => {
         <NetworkStatus />
         <BrowserRouter>
           <AuthProvider>
-            <AppRoutes />
+            <AppContent />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
 };
+
+// Separate component to use hooks that exist inside the providers (like Router)
+const AppContent = () => {
+  usePageTitle();
+  return <AppRoutes />;
+}
+
 
 export default App;
