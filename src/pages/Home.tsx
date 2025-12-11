@@ -53,6 +53,13 @@ export default function Home() {
     setSearchParams({ search: transcript });
   });
 
+  // Real-time voice search update
+  useEffect(() => {
+    if (isListening && interimTranscript) {
+      setSearchQuery(interimTranscript);
+    }
+  }, [isListening, interimTranscript]);
+
   useEffect(() => {
     const savedModel = getSelectedModel();
     setModel(savedModel || null);

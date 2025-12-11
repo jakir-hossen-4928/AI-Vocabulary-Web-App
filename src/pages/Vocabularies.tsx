@@ -82,10 +82,17 @@ export default function Vocabularies() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // Voice search
-  const { isListening, startListening, language, toggleLanguage } = useVoiceSearch((transcript) => {
+  const { isListening, startListening, language, toggleLanguage, interimTranscript } = useVoiceSearch((transcript) => {
     setSearchQuery(transcript);
     setSearchParams({ search: transcript });
   });
+
+  // Real-time voice search update
+  useEffect(() => {
+    if (isListening && interimTranscript) {
+      setSearchQuery(interimTranscript);
+    }
+  }, [isListening, interimTranscript]);
 
   const debouncedSearch = useDebounce(searchQuery, 150);
 
