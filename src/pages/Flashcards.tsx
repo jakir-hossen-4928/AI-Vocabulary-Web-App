@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { dexieService } from "@/lib/dexieDb";
 import { toast } from "sonner";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { speakText } from "@/services/ttsService";
 
 interface FlashcardProgress {
     vocabularyId: string;
@@ -126,9 +126,7 @@ export default function Flashcards() {
 
     const handleSpeak = (e: React.MouseEvent, text: string) => {
         e.stopPropagation();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US';
-        window.speechSynthesis.speak(utterance);
+        speakText(text);
     };
 
     // Spaced Repetition Logic (SuperMemo-2 inspired)

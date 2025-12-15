@@ -7,9 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut, Shield, Download, BookOpen, TrendingUp, Monitor, Layout } from "lucide-react";
+import { User, LogOut, Shield, Download, BookOpen, TrendingUp, Monitor, Layout, Mic } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTTS } from "@/hooks/useTTS";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
 import { useViewPreference } from "@/hooks/useViewPreference";
 import { toast } from "sonner";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
@@ -24,6 +27,7 @@ export default function Profile() {
   const [totalWords, setTotalWords] = useState(0);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const { preference, savePreference } = useViewPreference();
+  const { voices, selectedVoiceName, setVoice, testVoice, rate, setRate, pitch, setPitch } = useTTS();
 
   const { isInstallable, installApp } = useInstallPrompt();
 
@@ -201,6 +205,89 @@ export default function Profile() {
                   </Label>
                 </div>
               </RadioGroup>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* TTS Preferences */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38 }}
+          className="mb-6"
+        >
+          <Card className="p-4 shadow-hover">
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Text-to-Speech Voice</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Choose the voice used for pronunciation
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" onClick={() => testVoice()}>
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <Select value={selectedVoiceName || "default"} onValueChange={(val) => val !== "default" && setVoice(val)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a voice" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default System Voice</SelectItem>
+                  {voices.map((voice) => (
+                    <SelectItem key={voice.name} value={voice.name}>
+                      <span className="truncate block max-w-[280px] md:max-w-md">
+                        {voice.name} <span className="text-muted-foreground text-xs">({voice.lang})</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Rate & Pitch Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm font-medium">Speed (Rate)</Label>
+                    <span className="text-xs text-muted-foreground w-8 text-right">{rate.toFixed(1)}x</span>
+                  </div>
+                  <Slider
+                    value={[rate]}
+                    min={0.5}
+                    max={2.0}
+                    step={0.1}
+                    onValueChange={(val) => setRate(val[0])}
+                    className="cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground px-0.5">
+                    <span>Slow</span>
+                    <span>Fast</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm font-medium">Pitch</Label>
+                    <span className="text-xs text-muted-foreground w-8 text-right">{pitch.toFixed(1)}</span>
+                  </div>
+                  <Slider
+                    value={[pitch]}
+                    min={0.5}
+                    max={2.0}
+                    step={0.1}
+                    onValueChange={(val) => setPitch(val[0])}
+                    className="cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground px-0.5">
+                    <span>Low</span>
+                    <span>High</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </Card>
         </motion.div>
