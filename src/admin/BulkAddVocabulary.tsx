@@ -407,6 +407,39 @@ export default function BulkAddVocabulary() {
                 await dexieService.updateSyncMetadata('vocabularies');
                 console.log(`[Dexie] Cached ${successfulVocabs.length} bulk uploaded vocabularies`);
 
+                // Sync with PostgreSQL Backend (Dual Write)
+                const apiBase = import.meta.env.VITE_VOCAB_API;
+                if (apiBase) {
+                    try {
+                        console.log('Syncing bulk upload to PostgreSQL Backend...');
+                        console.log('API Base:', apiBase);
+                        console.log('Data to sync:', successfulVocabs.length, 'vocabularies');
+
+                        const response = await fetch(`${apiBase}/vocabularies/bulk`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(successfulVocabs),
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error('Backend sync failed:', response.status, errorText);
+                            throw new Error(`Backend Sync Failed: ${response.status} ${response.statusText} - ${errorText}`);
+                        }
+
+                        const result = await response.json();
+                        console.log('Successfully synced to PostgreSQL Backend:', result);
+                    } catch (apiError) {
+                        console.error('Failed to sync to backend:', apiError);
+                        toast.error(`Saved to Firebase but failed to sync to Backend API: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
+                    }
+                } else {
+                    console.warn('VITE_VOCAB_API not configured, skipping PostgreSQL sync');
+                    toast.warning('Vocabularies saved to Firebase but PostgreSQL sync skipped (API not configured)');
+                }
+
                 // Invalidate React Query cache to update UI automatically
                 await queryClient.invalidateQueries({ queryKey: ["vocabularies"] });
 
@@ -570,6 +603,37 @@ export default function BulkAddVocabulary() {
                     transition={{ delay: 0.2 }}
                 >
                     <Card className="p-3 sm:p-4 md:p-6 shadow-hover">
+                        {/* Dedicated Bulk Upload Button */}
+                        <div className="mb-4 sm:mb-6">
+                            <Button
+                                onClick={async () => {
+                                    if (validationPreview && validationPreview.valid > 0) {
+                                        // If data is already validated, upload directly
+                                        await handleConfirmUpload();
+                                    } else if (jsonInput.trim()) {
+                                        // Validate JSON first
+                                        handleValidateJSON();
+                                        toast.info("Data validated! Click 'Upload' button below to proceed.");
+                                    } else if (csvInput.trim()) {
+                                        // Validate CSV first
+                                        handleValidateCSV();
+                                        toast.info("Data validated! Click 'Upload' button below to proceed.");
+                                    } else {
+                                        toast.error("Please provide vocabulary data in JSON or CSV format first");
+                                    }
+                                }}
+                                disabled={loading}
+                                className="w-full h-10 sm:h-12 text-sm sm:text-base font-semibold bg-primary hover:bg-primary/90"
+                                size="lg"
+                            >
+                                <Upload className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                Bulk Upload Vocabularies
+                            </Button>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-2 text-center">
+                                Upload multiple vocabulary entries at once to both Firestore and PostgreSQL
+                            </p>
+                        </div>
+
                         <Tabs defaultValue="json" className="w-full">
                             <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-9 sm:h-10">
                                 <TabsTrigger value="json" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
@@ -804,10 +868,7 @@ export default function BulkAddVocabulary() {
                                         ) : (
                                             <>
                                                 <Upload className="mr-2 h-4 w-4" />
-                                                {(() => {
-                                                    const uniqueCount = validationPreview.valid - (validationPreview.duplicates || 0);
-                                                    return `Upload ${uniqueCount} ${uniqueCount === 1 ? 'Entry' : 'Entries'}${validationPreview.duplicates ? ` (${validationPreview.duplicates} skipped)` : ''}`;
-                                                })()}
+                                                Confirm Upload
                                             </>
                                         )}
                                     </Button>
