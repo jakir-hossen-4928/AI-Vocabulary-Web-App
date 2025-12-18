@@ -31,7 +31,11 @@ const AdminTools = lazy(() => import("./admin/AdminTools"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const DuplicateManager = lazy(() => import("./admin/DuplicateManager"));
 const AdminDashboard = lazy(() => import("./admin/AdminDashboard"));
+<<<<<<< HEAD
 
+=======
+const BackendTest = lazy(() => import("./admin/BackendTest"));
+>>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 const AdminResourceGallery = lazy(() => import("./admin/ResourceGallery"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const WordChatPage = lazy(() => import("./pages/WordChatPage"));
@@ -40,8 +44,11 @@ const AIActivity = lazy(() => import("./openrouterAi/AIActivity"));
 const APIKeySetup = lazy(() => import("./openrouterAi/APIKeySetup"));
 const Flashcards = lazy(() => import("./pages/Flashcards"));
 
+<<<<<<< HEAD
 const Migration = lazy(() => import("./pages/Migration"));
 
+=======
+>>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -102,8 +109,12 @@ const AppRoutes = () => {
           <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
           <Route path="/admin/tools" element={<AdminRoute><AdminTools /></AdminRoute>} />
           <Route path="/admin/duplicates" element={<AdminRoute><DuplicateManager /></AdminRoute>} />
+<<<<<<< HEAD
 
           <Route path="/admin/migration" element={<AdminRoute><Migration /></AdminRoute>} />
+=======
+          <Route path="/admin/test" element={<AdminRoute><BackendTest /></AdminRoute>} />
+>>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
           <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Route>
