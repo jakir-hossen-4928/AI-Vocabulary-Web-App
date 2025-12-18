@@ -132,7 +132,9 @@ export default function ResourceDetail() {
 
     if (!grammar) return null;
 
-    const isHtml = /<[a-z][\s\S]*>/i.test(grammar.description || '');
+    // Check if content looks like HTML (starts with < tag or contains common block tags)
+    const trimmedDesc = grammar.description?.trim() || '';
+    const isHtml = /^<[a-z]/i.test(trimmedDesc) || /<\/?(p|div|ul|ol|li|h[1-6]|br|table|span|b|i|strong|em)\b/i.test(trimmedDesc);
 
     return (
         <div className="min-h-screen bg-background pb-20 overflow-x-hidden" {...containerProps}>

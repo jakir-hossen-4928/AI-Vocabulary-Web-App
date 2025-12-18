@@ -143,9 +143,6 @@ export const useResourceMutations = () => {
             const docRef = await addDoc(collection(db, "grammar_images"), newResource);
             const resourceWithId = { id: docRef.id, ...newResource };
 
-<<<<<<< HEAD
-
-=======
             // Sync with Backend
             const apiBase = import.meta.env.VITE_VOCAB_API;
             if (apiBase) {
@@ -159,7 +156,6 @@ export const useResourceMutations = () => {
                     console.error("Backend sync failed (addResource):", err);
                 }
             }
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 
             return resourceWithId;
         },
@@ -209,9 +205,6 @@ export const useResourceMutations = () => {
         mutationFn: async ({ id, ...data }: Partial<GrammarImage> & { id: string }) => {
             await updateDoc(doc(db, "grammar_images", id), data);
 
-<<<<<<< HEAD
-
-=======
             // Sync with Backend
             const apiBase = import.meta.env.VITE_VOCAB_API;
             if (apiBase) {
@@ -225,7 +218,6 @@ export const useResourceMutations = () => {
                     console.error("Backend sync failed (updateResource):", err);
                 }
             }
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 
             return { id, ...data };
         },
@@ -284,9 +276,6 @@ export const useResourceMutations = () => {
         mutationFn: async (id: string) => {
             await deleteDoc(doc(db, "grammar_images", id));
 
-<<<<<<< HEAD
-
-=======
             // Sync with Backend
             const apiBase = import.meta.env.VITE_VOCAB_API;
             if (apiBase) {
@@ -298,7 +287,6 @@ export const useResourceMutations = () => {
                     console.error("Backend sync failed (deleteResource):", err);
                 }
             }
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 
             return id;
         },

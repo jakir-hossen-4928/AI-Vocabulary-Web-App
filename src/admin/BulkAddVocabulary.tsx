@@ -1,19 +1,11 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
-import { collection, writeBatch, doc } from "firebase/firestore"; // Restored
-import { db } from "@/lib/firebase"; // Restored
-import { useAuth } from "@/contexts/AuthContext";
-import { Vocabulary, VerbForms, RelatedWord } from "@/types/vocabulary";
-import { dexieService } from "@/lib/dexieDb"; // Restored
-=======
-import { collection, addDoc, writeBatch, doc } from "firebase/firestore";
+import { collection, writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Vocabulary, VerbForms, RelatedWord } from "@/types/vocabulary";
 import { dexieService } from "@/lib/dexieDb";
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -22,17 +14,10 @@ import { ArrowLeft, Loader2, Upload, FileJson, FileSpreadsheet, CheckCircle2, Al
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-<<<<<<< HEAD
-import { Alert as UIAlert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import { useVocabularies } from "@/hooks/useVocabularies"; // Restored
-import { checkBulkVocabularyDuplicates, getDuplicateStats, filterNonDuplicates } from "@/utils/vocabularyDuplicateChecker"; // Restored
-=======
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useVocabularies } from "@/hooks/useVocabularies";
 import { checkBulkVocabularyDuplicates, getDuplicateStats, filterNonDuplicates } from "@/utils/vocabularyDuplicateChecker";
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 
 interface BulkVocabulary {
     english: string;
@@ -54,78 +39,6 @@ const TEMPLATE_DATA = [
         "partOfSpeech": "Verb",
         "pronunciation": "us: BD:রাইট",
         "explanation": "Mark (letters, words, or other symbols) on a surface, typically paper, with a pen, pencil, or similar implement.",
-<<<<<<< HEAD
-        "synonyms": ["inscribe", "pen", "record", "draft", "compose"],
-        "antonyms": ["read", "erase"],
-        "examples": [{ "en": "He wrote a very famous book.", "bn": "সে একটি খুব বিখ্যাত বই লিখেছিল।" }],
-        "verbForms": { "base": "write", "v2": "wrote", "v3": "written", "ing": "writing", "s_es": "writes" },
-        "relatedWords": [{ "word": "writer", "partOfSpeech": "Noun", "meaning": "লেখক", "example": "She is a famous writer." }]
-    }
-];
-
-
-// Supabase sync removed: data is persisted to Firebase and cached in Dexie only.
-
-const parseCSV = (csv: string): BulkVocabulary[] => {
-    const lines = csv.trim().split("\n");
-    if (lines.length < 2) throw new Error("CSV must have at least a header row and one data row");
-
-    const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
-    const data: BulkVocabulary[] = [];
-
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-        const cleanValues = values.map(v => v.trim().replace(/^"|"$/g, ""));
-
-        if (cleanValues.length === 0) continue;
-
-        const row: any = {};
-        headers.forEach((header, index) => {
-            const value = cleanValues[index] || "";
-            if (header === "synonyms" || header === "antonyms") {
-                row[header] = value ? value.split(";").map(s => s.trim()).filter(Boolean) : [];
-            } else if (header === "examples_en" || header === "examples_bn") {
-                if (!row.examples) row.examples = [];
-                if (header === "examples_en" && value) {
-                    row.examples.push({ en: value, bn: "" });
-                } else if (header === "examples_bn" && value && row.examples.length > 0) {
-                    row.examples[row.examples.length - 1].bn = value;
-                }
-            } else {
-                row[header] = value;
-            }
-        });
-
-        if (row.english && row.bangla) {
-            data.push(row);
-        }
-    }
-    return data;
-};
-
-const validateVocabulary = (vocab: BulkVocabulary): string | null => {
-    if (!vocab.english || !vocab.bangla) {
-        return "English and Bangla fields are required";
-    }
-    if (vocab.english.trim().length === 0 || vocab.bangla.trim().length === 0) {
-        return "English and Bangla cannot be empty";
-    }
-    return null;
-};
-
-export default function BulkAddVocabulary() {
-    const { user } = useAuth();
-    const navigate = useNavigate();
-    const queryClient = useQueryClient();
-    const { data: existingVocabularies = [] } = useVocabularies();
-
-    const [loading, setLoading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const [uploadResults, setUploadResults] = useState<any>(null);
-    const [jsonInput, setJsonInput] = useState("");
-    const [csvInput, setCsvInput] = useState("");
-    const [validationPreview, setValidationPreview] = useState<any>(null);
-=======
         "synonyms": [
             "inscribe",
             "pen",
@@ -192,7 +105,7 @@ export default function BulkAddVocabulary() {
             }
         ]
     }
-]
+];
 
 const AI_PROMPT = `
 Generate advanced academic vocabulary words suitable for IELTS Writing Task 2 at Band 7+ level, focusing on formal essay contexts. The words should be sophisticated and commonly used in discussions of social issues, environment, education, and technology.
@@ -340,7 +253,10 @@ export default function BulkAddVocabulary() {
         duplicateList?: Array<{ index: number; vocabulary: BulkVocabulary; duplicates: Vocabulary[] }>;
     } | null>(null);
 
-    if (!user || !isAdmin) {
+    // If not able to verify admin, simple redirect.
+    // Assuming isAdmin check is robust. 
+    // If user is just 'user' in AuthContext, we might need existence check.
+    if (user && isAdmin === false) { // helper logic if isAdmin is strictly boolean
         navigate("/");
         return null;
     }
@@ -414,7 +330,6 @@ export default function BulkAddVocabulary() {
         }
         return null;
     };
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 
     const handleBulkUpload = async (vocabularies: BulkVocabulary[]) => {
         if (vocabularies.length === 0) {
@@ -438,10 +353,6 @@ export default function BulkAddVocabulary() {
             const batch = writeBatch(db);
             const timestamp = new Date().toISOString();
 
-<<<<<<< HEAD
-            // 1. Prepare Firebase Batch and Valid Data
-=======
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
             for (let i = 0; i < vocabularies.length; i++) {
                 const vocab = vocabularies[i];
                 const error = validateVocabulary(vocab);
@@ -469,10 +380,6 @@ export default function BulkAddVocabulary() {
                     };
 
                     const isVerb = vocab.partOfSpeech?.toLowerCase().includes("verb");
-<<<<<<< HEAD
-=======
-
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                     if (isVerb && vocab.verbForms) {
                         data.verbForms = vocab.verbForms;
                     }
@@ -481,51 +388,26 @@ export default function BulkAddVocabulary() {
                         data.relatedWords = vocab.relatedWords;
                     }
 
-<<<<<<< HEAD
-                    // Add to Firebase batch
-                    batch.set(docRef, data);
-
-                    // Add to local success list for Dexie and Supabase
-=======
                     batch.set(docRef, data);
 
                     // Store for Dexie caching
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                     successfulVocabs.push({ id: docRef.id, ...data } as Vocabulary);
                     results.success++;
                 } catch (err) {
                     results.failed++;
                     results.errors.push(`Row ${i + 1}: ${err instanceof Error ? err.message : "Unknown error"}`);
                 }
-<<<<<<< HEAD
                 setUploadProgress(((i + 1) / vocabularies.length) * 0.5); // 50% progress for preparation
-            }
-
-            if (results.success > 0) {
-                // 2. Commit to Firebase
-                await batch.commit();
-                console.log(`[Firebase] Batch committed ${results.success} records`);
-
-                // 3. Update Dexie Cache
-=======
-
-                setUploadProgress(((i + 1) / vocabularies.length) * 100);
             }
 
             if (results.success > 0) {
                 await batch.commit();
 
                 // Cache in Dexie for instant access
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                 await dexieService.addVocabularies(successfulVocabs);
                 await dexieService.updateSyncMetadata('vocabularies');
                 console.log(`[Dexie] Cached ${successfulVocabs.length} bulk uploaded vocabularies`);
 
-<<<<<<< HEAD
-
-                // Invalidate React Query cache
-                await queryClient.invalidateQueries({ queryKey: ["vocabularies"] });
-=======
                 // Sync with PostgreSQL Backend (Dual Write)
                 const apiBase = import.meta.env.VITE_VOCAB_API;
                 if (apiBase) {
@@ -562,7 +444,6 @@ export default function BulkAddVocabulary() {
                 // Invalidate React Query cache to update UI automatically
                 await queryClient.invalidateQueries({ queryKey: ["vocabularies"] });
 
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                 toast.success(`Successfully uploaded ${results.success} vocabularies`);
             }
 
@@ -576,10 +457,7 @@ export default function BulkAddVocabulary() {
             toast.error("Failed to upload vocabularies");
         } finally {
             setLoading(false);
-<<<<<<< HEAD
             setUploadProgress(100);
-=======
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
         }
     };
 
@@ -590,10 +468,7 @@ export default function BulkAddVocabulary() {
             validateAndPreview(vocabularies);
         } catch (error) {
             toast.error("Invalid JSON format");
-<<<<<<< HEAD
-=======
             console.error(error);
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
         }
     };
 
@@ -620,16 +495,11 @@ export default function BulkAddVocabulary() {
             }
         });
 
-<<<<<<< HEAD
-        const duplicateCheckResults = checkBulkVocabularyDuplicates(validVocabs, existingVocabularies);
-        const duplicateStats = getDuplicateStats(duplicateCheckResults);
-=======
         // Check for duplicates in valid vocabularies
         const duplicateCheckResults = checkBulkVocabularyDuplicates(validVocabs, existingVocabularies);
         const duplicateStats = getDuplicateStats(duplicateCheckResults);
 
         // Filter out duplicates from the list
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
         const duplicateEntries = duplicateCheckResults.filter(r => r.isDuplicate);
 
         setValidationPreview({
@@ -662,10 +532,7 @@ export default function BulkAddVocabulary() {
             return;
         }
 
-<<<<<<< HEAD
-=======
         // Filter out duplicates before uploading
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
         const duplicateCheckResults = checkBulkVocabularyDuplicates(
             validationPreview.vocabularies,
             existingVocabularies
@@ -682,43 +549,13 @@ export default function BulkAddVocabulary() {
 
         if (nonDuplicateVocabs.length < validationPreview.vocabularies.length) {
             const skipped = validationPreview.vocabularies.length - nonDuplicateVocabs.length;
-<<<<<<< HEAD
-            toast.warning(`Skipping ${skipped} duplicates. Uploading ${nonDuplicateVocabs.length} unique items.`);
-=======
             toast.warning(`Skipping ${skipped} duplicate(s). Uploading ${nonDuplicateVocabs.length} unique vocabularies.`, {
                 duration: 5000
             });
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
         }
 
         await handleBulkUpload(nonDuplicateVocabs);
         setValidationPreview(null);
-    };
-
-<<<<<<< HEAD
-    const handlePaste = async (type: 'json' | 'csv') => {
-        try {
-            const text = await navigator.clipboard.readText();
-            if (type === 'json') setJsonInput(text);
-            else setCsvInput(text);
-            toast.success("Pasted from clipboard!");
-        } catch (err) { toast.error("Failed to read clipboard"); }
-=======
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "json" | "csv") => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const content = event.target?.result as string;
-            if (type === "json") {
-                setJsonInput(content);
-            } else {
-                setCsvInput(content);
-            }
-        };
-        reader.readAsText(file);
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
     };
 
     return (
@@ -730,34 +567,22 @@ export default function BulkAddVocabulary() {
                 className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground px-3 sm:px-4 pt-4 sm:pt-6 md:pt-8 pb-6 sm:pb-8 md:pb-12"
             >
                 <div className="max-w-5xl mx-auto">
-<<<<<<< HEAD
-                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mb-3 sm:mb-4 text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8 sm:h-9 sm:w-9">
-=======
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => navigate(-1)}
                         className="mb-3 sm:mb-4 text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8 sm:h-9 sm:w-9"
                     >
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                         <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                     <h1 className="text-xl sm:text-2xl font-bold mb-1">Bulk Add Vocabularies</h1>
                     <p className="text-primary-foreground/80 text-xs sm:text-sm">
-<<<<<<< HEAD
-                        Upload to Firebase & Sync to Supabase
-=======
                         Upload multiple words at once using JSON or CSV format
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                     </p>
                 </div>
             </motion.header>
 
             <div className="max-w-5xl mx-auto px-3 sm:px-4 -mt-4 sm:-mt-6">
-<<<<<<< HEAD
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
-                    <Card className="p-3 sm:p-4 md:p-6 shadow-hover">
-=======
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -765,22 +590,10 @@ export default function BulkAddVocabulary() {
                 >
                     <Card className="p-3 sm:p-4 md:p-6 shadow-hover">
                         {/* Dedicated Bulk Upload Button */}
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                         <div className="mb-4 sm:mb-6">
                             <Button
                                 onClick={async () => {
                                     if (validationPreview && validationPreview.valid > 0) {
-<<<<<<< HEAD
-                                        await handleConfirmUpload();
-                                    } else if (jsonInput.trim()) {
-                                        handleValidateJSON();
-                                        toast.info("Validated! Click 'Upload' to proceed.");
-                                    } else if (csvInput.trim()) {
-                                        handleValidateCSV();
-                                        toast.info("Validated! Click 'Upload' to proceed.");
-                                    } else {
-                                        toast.error("Please provide data first");
-=======
                                         // If data is already validated, upload directly
                                         await handleConfirmUpload();
                                     } else if (jsonInput.trim()) {
@@ -793,7 +606,6 @@ export default function BulkAddVocabulary() {
                                         toast.info("Data validated! Click 'Upload' button below to proceed.");
                                     } else {
                                         toast.error("Please provide vocabulary data in JSON or CSV format first");
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                                     }
                                 }}
                                 disabled={loading}
@@ -801,68 +613,16 @@ export default function BulkAddVocabulary() {
                                 size="lg"
                             >
                                 <Upload className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-<<<<<<< HEAD
-                                {loading ? "Uploading..." : "Bulk Upload Vocabularies"}
-                            </Button>
-=======
                                 Bulk Upload Vocabularies
                             </Button>
                             <p className="text-xs sm:text-sm text-muted-foreground mt-2 text-center">
                                 Upload multiple vocabulary entries at once to both Firestore and PostgreSQL
                             </p>
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                         </div>
 
                         <Tabs defaultValue="json" className="w-full">
                             <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-9 sm:h-10">
                                 <TabsTrigger value="json" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
-<<<<<<< HEAD
-                                    <FileJson className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> JSON
-                                </TabsTrigger>
-                                <TabsTrigger value="csv" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                                    <FileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> CSV
-                                </TabsTrigger>
-                            </TabsList>
-
-                            <div className="flex justify-end gap-2 mb-2">
-                                <Button variant="outline" size="sm" onClick={() => copyTemplate("prompt")}>
-                                    <Sparkles className="h-3 w-3 mr-1" /> AI Prompt
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={() => copyTemplate(jsonInput ? "json" : "csv")}>
-                                    <Copy className="h-3 w-3 mr-1" /> Template
-                                </Button>
-                            </div>
-
-                            <TabsContent value="json" className="space-y-3 sm:space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <Label>Paste JSON</Label>
-                                    <Button variant="ghost" size="sm" onClick={() => handlePaste("json")}>Paste</Button>
-                                </div>
-                                <Textarea
-                                    value={jsonInput}
-                                    onChange={(e) => setJsonInput(e.target.value)}
-                                    placeholder="Paste JSON array..."
-                                    className="min-h-[250px] font-mono text-xs sm:text-sm"
-                                />
-                                <Button onClick={handleValidateJSON} disabled={loading} className="w-full" variant="secondary">
-                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Validate JSON
-                                </Button>
-                            </TabsContent>
-
-                            <TabsContent value="csv" className="space-y-3 sm:space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <Label>Paste CSV</Label>
-                                    <Button variant="ghost" size="sm" onClick={() => handlePaste("csv")}>Paste</Button>
-                                </div>
-                                <Textarea
-                                    value={csvInput}
-                                    onChange={(e) => setCsvInput(e.target.value)}
-                                    placeholder="Paste CSV content..."
-                                    className="min-h-[250px] font-mono text-xs sm:text-sm"
-                                />
-                                <Button onClick={handleValidateCSV} disabled={loading} className="w-full" variant="secondary">
-                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Validate CSV
-=======
                                     <FileJson className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                     <span className="hidden xs:inline">JSON Format</span>
                                     <span className="xs:hidden">JSON</span>
@@ -997,41 +757,10 @@ export default function BulkAddVocabulary() {
                                 >
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
                                     Validate Data
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                                 </Button>
                             </TabsContent>
                         </Tabs>
 
-<<<<<<< HEAD
-                        {validationPreview && (
-                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
-                                <UIAlert>
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    <AlertTitle>Validation Summary</AlertTitle>
-                                    <AlertDescription>
-                                        <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
-                                            <div>Total: {validationPreview.total}</div>
-                                            <div className="text-green-600">Valid: {validationPreview.valid}</div>
-                                            <div className="text-destructive">Invalid: {validationPreview.invalid}</div>
-                                            {validationPreview.duplicates !== undefined && (
-                                                <div className="text-yellow-600">Duplicates: {validationPreview.duplicates}</div>
-                                            )}
-                                        </div>
-                                        {validationPreview.errors.length > 0 && (
-                                            <div className="mt-2 text-xs text-destructive max-h-32 overflow-y-auto border p-2 bg-white/50 rounded">
-                                                {validationPreview.errors.map((e, i) => <div key={i}>{e}</div>)}
-                                            </div>
-                                        )}
-                                    </AlertDescription>
-                                </UIAlert>
-                            </motion.div>
-                        )}
-
-                        {loading && (
-                            <div className="mt-4 space-y-2">
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>Uploading...</span>
-=======
                         {/* Validation Preview */}
                         {validationPreview && (
                             <motion.div
@@ -1138,14 +867,11 @@ export default function BulkAddVocabulary() {
                             <div className="mt-4 sm:mt-6 space-y-2">
                                 <div className="flex justify-between text-xs sm:text-sm">
                                     <span>Uploading vocabularies...</span>
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                                     <span>{Math.round(uploadProgress)}%</span>
                                 </div>
                                 <Progress value={uploadProgress} />
                             </div>
                         )}
-<<<<<<< HEAD
-=======
 
                         {/* Upload Results */}
                         {uploadResults && (
@@ -1205,7 +931,6 @@ export default function BulkAddVocabulary() {
                             <li>• For JSON: Provide arrays for synonyms, antonyms, and examples</li>
                             <li>• Maximum 500 words per upload for optimal performance</li>
                         </ul>
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
                     </Card>
                 </motion.div>
             </div>

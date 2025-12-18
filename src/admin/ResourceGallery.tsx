@@ -2,10 +2,6 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadImage } from "@/services/imageService";
 import { GrammarImage } from "@/types/grammar";
-<<<<<<< HEAD
-
-=======
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 import { useResourcesSimple, useResourceMutations } from "@/hooks/useResources";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -107,11 +103,6 @@ export default function AdminResourceGallery() {
                 docData.thumbnailUrl = thumbnailUrl;
             }
 
-<<<<<<< HEAD
-            const result = await addResource.mutateAsync(docData);
-
-
-=======
             await addResource.mutateAsync(docData);
 
             // Sync with PostgreSQL Backend (Dual Write)
@@ -156,7 +147,6 @@ export default function AdminResourceGallery() {
                 console.warn('VITE_VOCAB_API not configured, skipping PostgreSQL sync');
                 showErrorToast('Resource saved to Firebase but PostgreSQL sync skipped (API not configured)');
             }
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 
             // Toast is shown by the mutation hook
             resetForm();
@@ -192,10 +182,6 @@ export default function AdminResourceGallery() {
 
             await updateResource.mutateAsync(updateData);
 
-<<<<<<< HEAD
-
-
-=======
             // Sync with PostgreSQL Backend (Dual Write)
             const apiBase = import.meta.env.VITE_VOCAB_API;
             if (apiBase) {
@@ -224,7 +210,6 @@ export default function AdminResourceGallery() {
                 console.warn('VITE_VOCAB_API not configured, skipping PostgreSQL sync');
                 showErrorToast('Resource updated in Firebase but PostgreSQL sync skipped (API not configured)');
             }
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 
             // Toast is shown by the mutation hook
             resetForm();
@@ -246,10 +231,6 @@ export default function AdminResourceGallery() {
         if (isConfirmed) {
             await deleteResource.mutateAsync(id);
 
-<<<<<<< HEAD
-
-
-=======
             // Sync with PostgreSQL Backend (Dual Write)
             const apiBase = import.meta.env.VITE_VOCAB_API;
             if (apiBase) {
@@ -274,7 +255,6 @@ export default function AdminResourceGallery() {
                 console.warn('VITE_VOCAB_API not configured, skipping PostgreSQL sync');
                 showErrorToast('Resource deleted from Firebase but PostgreSQL sync skipped (API not configured)');
             }
->>>>>>> af14e93ec7204babc975110bec135aa2482e8e00
 
             // Toast is shown by the mutation hook
         }
