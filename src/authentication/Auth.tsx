@@ -32,17 +32,23 @@ export default function Auth() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-            <div className="w-full max-w-md">
+        <div
+            className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center bg-no-repeat relative"
+            style={{ backgroundImage: "url('/background.png')" }}
+        >
+            {/* Subtle Overlay */}
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" />
+
+            <div className="relative z-10 w-full max-w-md">
                 {/* Logo & Header */}
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground mb-6 shadow-lg shadow-primary/20">
-                        <BookOpen className="h-8 w-8" />
+                        <img className="w-full h-full object-contain rounded-md border border-slate-200 " src="../../public/icon.png" alt="" />
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">
-                        AI Vocab Coach
+                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
+                        AI Vocab
                     </h1>
-                    <p className="text-slate-500">
+                    <p className="text-slate-200">
                         Master language with smart tools.
                     </p>
                 </div>
@@ -57,7 +63,7 @@ export default function Auth() {
                         onClick={handleGoogleSignIn}
                         size="lg"
                         variant="outline"
-                        className="w-full h-14 text-base font-medium border-2 rounded-2xl hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
+                        className="w-full h-14 text-base font-medium border-2 rounded-2xl  transition-all flex items-center justify-center gap-3"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path
@@ -82,26 +88,29 @@ export default function Auth() {
 
                     <div className="mt-8 pt-8 border-t">
                         <motion.div
-                            whileHover={{ y: -2 }}
+                            whileHover={{ y: -4, boxShadow: "0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => navigate("/download")}
-                            className="p-5 rounded-2xl bg-slate-50 border border-slate-100 cursor-pointer flex items-center justify-between group transition-all mt-2"
+                            className="p-5 rounded-2xl bg-white border border-slate-200 cursor-pointer flex items-center justify-between group transition-all duration-300 shadow-sm hover:border-primary/30"
                         >
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                    <Smartphone className="h-5 w-5" />
+                                <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-primary group-hover:bg-primary/5 transition-colors overflow-hidden p-1">
+                                    <img className="w-full h-full object-contain rounded-lg" src="/icon.png" alt="App Icon" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-sm">Download Mobile App</h4>
-                                    <p className="text-xs text-muted-foreground">Get the official Android APK</p>
+                                    <h4 className="font-bold text-sm text-slate-900">Download Mobile App</h4>
+                                    <p className="text-xs text-slate-500 font-medium">Get the official Android APK</p>
                                 </div>
                             </div>
-                            <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                            <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                            </div>
                         </motion.div>
                     </div>
                 </Card>
 
                 <p className="mt-10 text-center text-xs text-slate-400 uppercase tracking-widest font-medium">
-                    &copy; {new Date().getFullYear()} AI Vocab Coach
+                    &copy; {new Date().getFullYear()} AI Vocab
                 </p>
             </div>
         </div>

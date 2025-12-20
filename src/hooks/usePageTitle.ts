@@ -4,7 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useVocabularies } from '@/hooks/useVocabularies';
 
-const DEFAULT_TITLE = 'AI Vocab Coach';
+const DEFAULT_TITLE = 'AI Vocab';
 
 const ROUTE_TITLES: Record<string, string> = {
     '/': 'Welcome',
