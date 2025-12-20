@@ -2,7 +2,7 @@ import React from 'react';
 import { Vocabulary } from '@/types/vocabulary';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { BookOpen, MessageSquare, Activity, Copy, ArrowRightLeft, Languages, Globe } from 'lucide-react';
+import { Sparkles, MessageSquare, Activity, Copy, ArrowRightLeft, Languages, Globe } from 'lucide-react';
 
 interface ShareableVocabularyCardProps {
     item: Vocabulary;
@@ -35,7 +35,7 @@ export const ShareableVocabularyCard = React.forwardRef<HTMLDivElement, Shareabl
                 {/* App Branding Header */}
                 <div className="flex items-center gap-3 mb-6">
                     <div className="bg-blue-500 p-2 rounded-xl">
-                        <BookOpen className="w-6 h-6 text-white" />
+                        <Sparkles className="w-6 h-6 text-white" />
                     </div>
                     <span className="text-xl font-bold text-blue-500 tracking-tight">Ai Vocab</span>
                 </div>
