@@ -12,7 +12,6 @@ import { lazy, Suspense } from "react";
 import Auth from "./authentication/Auth";
 import { Layout } from "@/layouts/Layout";
 import { LandingLayout } from "@/layouts/LandingLayout";
-import LandingPage from "./pages/LandingPage";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 import { AdminRoute } from "@/routes/AdminRoute";
@@ -39,6 +38,7 @@ const OnlineDictionary = lazy(() => import("./pages/OnlineDictionary"));
 const AIActivity = lazy(() => import("./openrouterAi/AIActivity"));
 const APIKeySetup = lazy(() => import("./openrouterAi/APIKeySetup"));
 const Flashcards = lazy(() => import("./pages/Flashcards"));
+const DownloadPage = lazy(() => import("./pages/DownloadPage"));
 
 
 const queryClient = new QueryClient();
@@ -63,11 +63,11 @@ const AppRoutes = () => {
       </div>
     }>
       <Routes>
-        {/* Landing Page - No Sidebar/BottomNav (for non-authenticated users) */}
+        {/* Auth routes */}
         <Route element={<LandingLayout />}>
-          {/* Show LandingPage only if not authenticated */}
-          <Route path="/" element={!loading && !user ? <LandingPage /> : <Navigate to="/home" replace />} />
+          <Route path="/" element={<Navigate to={!loading && user ? "/home" : "/auth"} replace />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/download" element={<DownloadPage />} />
         </Route>
 
         {/* App Pages - With Sidebar/BottomNav (for authenticated users) */}

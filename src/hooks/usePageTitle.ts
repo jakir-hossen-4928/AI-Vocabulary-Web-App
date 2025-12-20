@@ -4,17 +4,18 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useVocabularies } from '@/hooks/useVocabularies';
 
-const DEFAULT_TITLE = 'AI Vocabulary';
+const DEFAULT_TITLE = 'AI Vocab Coach';
 
 const ROUTE_TITLES: Record<string, string> = {
     '/': 'Welcome',
-    '/auth': 'Sign In / Sign Up',
+    '/auth': 'Sign In',
+    '/download': 'Download App',
     '/home': 'Home',
     '/profile': 'My Profile',
     '/vocabularies': 'Vocabularies',
     '/vocabularies/add': 'Add Vocabulary',
     '/vocabularies/bulk-add': 'Bulk Add Vocabularies',
-    '/resources': 'Resource Gallery',
+    '/resources': 'Resources',
     '/dictionary': 'Online Dictionary',
     '/ai-activity': 'AI Activity',
     '/flashcards': 'Flashcards',
