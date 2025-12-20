@@ -44,6 +44,7 @@ export default function Auth() {
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground mb-6 shadow-lg shadow-primary/20">
                         <img className="w-full h-full object-contain rounded-md border border-slate-200 " src="../../public/icon.png" alt="" />
+                        <BookOpen className="w-6 h-6" />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
                         AI Vocab
