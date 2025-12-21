@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import parse from "html-react-parser";
 import { useResourcesSimple } from "@/hooks/useResources";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -132,21 +133,23 @@ export default function ResourceDetail() {
 
     if (!grammar) return null;
 
-    // Check if content looks like HTML (starts with < tag or contains common block tags)
+    // Check if content looks like HTML
     const trimmedDesc = grammar.description?.trim() || '';
-    const isHtml = /^<[a-z]/i.test(trimmedDesc) || /<\/?(p|div|ul|ol|li|h[1-6]|br|table|span|b|i|strong|em)\b/i.test(trimmedDesc);
+    // Improved detection: starts with tag or contains common block tags at start of lines or inside
+    const isHtml = /^<[a-z]/i.test(trimmedDesc) ||
+        /<\/?(p|div|ul|ol|li|h[1-6]|br|table|section|article|header|footer|span|b|i|strong|em)\b/i.test(trimmedDesc);
 
     return (
         <div className="min-h-screen bg-background pb-20 overflow-x-hidden" {...containerProps}>
             {/* Navigation Bar */}
             <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b px-4 py-3">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <Button variant="ghost" size="sm" onClick={() => navigate("/resources")} className="gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => navigate("/resources")} className="gap-2 font-medium">
                         <ArrowLeft className="h-4 w-4" />
                         Back to Gallery
                     </Button>
                     <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" onClick={handleShare}>
+                        <Button variant="ghost" size="icon" onClick={handleShare} className="rounded-full">
                             <Share2 className="h-4 w-4" />
                         </Button>
                     </div>
@@ -171,50 +174,45 @@ export default function ResourceDetail() {
                             className="mb-8 md:mb-12 text-center space-y-6"
                         >
                             <div className="space-y-4">
-                                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight text-foreground">
+                                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight text-foreground balance-text">
                                     {grammar.title}
                                 </h1>
 
                                 {grammar.createdAt && (
-                                    <div className="flex items-center justify-center gap-4 text-muted-foreground text-sm">
-                                        <div className="flex items-center gap-1.5">
-                                            <Calendar className="h-4 w-4" />
+                                    <div className="flex items-center justify-center gap-4 text-muted-foreground text-sm font-medium">
+                                        <div className="flex items-center gap-1.5 bg-muted/50 px-3 py-1 rounded-full">
+                                            <Calendar className="h-3.5 w-3.5" />
                                             <time dateTime={grammar.createdAt}>
                                                 {format(new Date(grammar.createdAt), "MMMM d, yyyy")}
                                             </time>
                                         </div>
-                                        <span>•</span>
-                                        <span>Resource Guide</span>
+                                        <span className="hidden sm:inline">•</span>
+                                        <span className="bg-primary/10 text-primary px-3 py-1 rounded-full hidden sm:inline">Resource Guide</span>
                                     </div>
                                 )}
                             </div>
                         </motion.header>
 
-                        {/* Featured Image */}
+                        {/* Article Cover Image */}
                         {grammar.imageUrl && (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.2 }}
-                                className="mb-10 md:mb-14"
+                                className="mb-10 md:mb-16 -mx-4 md:mx-0"
                             >
-                                <div className="relative w-full rounded-2xl overflow-hidden shadow-xl bg-muted/30 flex items-center justify-center" style={{ minHeight: '400px', maxHeight: '600px' }}>
+                                <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border bg-muted">
                                     <img
                                         src={grammar.imageUrl}
                                         alt={grammar.title}
-                                        className="w-full h-full object-contain max-h-[600px]"
+                                        className="w-full h-full object-cover"
+                                        width={1200}
+                                        height={675}
                                     />
-                                    <Button
-                                        variant="secondary"
-                                        size="icon"
-                                        className="absolute top-4 right-4 shadow-sm bg-background/80 backdrop-blur-sm hover:bg-background"
-                                        onClick={() => window.open(grammar.imageUrl, '_blank')}
-                                    >
-                                        <Download className="h-4 w-4" />
-                                    </Button>
                                 </div>
                             </motion.div>
                         )}
+
 
                         {/* Article Content */}
                         {grammar.description && (
@@ -222,30 +220,45 @@ export default function ResourceDetail() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.3 }}
+                                className="resource-content-container"
                             >
-                                <div className="prose prose-lg dark:prose-invert max-w-none
-                            prose-headings:font-bold prose-headings:tracking-tight
-                            prose-p:leading-relaxed prose-p:text-muted-foreground
-                            prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-                            prose-img:rounded-xl prose-img:shadow-lg
-                            prose-blockquote:border-l-primary prose-blockquote:bg-muted/50 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg
-                            prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none"
+                                <div className="prose prose-blue dark:prose-invert max-w-none
+                            prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight
+                            prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mb-4 prose-h2:mt-8
+                            prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mb-3 prose-h3:mt-6
+                            prose-p:leading-relaxed prose-p:text-muted-foreground/90 prose-p:mb-5
+                            prose-ul:my-6 prose-li:my-1 prose-li:text-muted-foreground/90
+                            prose-a:text-primary prose-a:font-medium prose-a:no-underline hover:prose-a:underline
+                            prose-img:rounded-2xl prose-img:shadow-xl prose-img:my-10 prose-img:border
+                            prose-blockquote:border-l-4 prose-blockquote:border-l-primary prose-blockquote:bg-primary/5 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-xl prose-blockquote:italic
+                            prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-code:text-primary prose-code:font-medium"
                                 >
                                     {isHtml ? parse(grammar.description, {
-                                        replace: (domNode) => {
+                                        replace: (domNode: any) => {
                                             if (domNode.type === 'tag' && domNode.name === 'img') {
                                                 const { attribs } = domNode;
-                                                // Ensure basic optimization attributes are present if not already
                                                 if (!attribs.loading) attribs.loading = 'lazy';
                                                 if (!attribs.decoding) attribs.decoding = 'async';
-                                                // Optional: add a class for smooth loading transition if you had CSS for it
+                                                if (!attribs.style) attribs.style = '';
+                                                attribs.className = `${attribs.className || ''} rounded-2xl shadow-lg my-8 border`.trim();
                                                 return domNode;
                                             }
                                         }
                                     }) : <ReactMarkdown
+                                        rehypePlugins={[rehypeRaw]}
                                         components={{
                                             img: (props) => (
-                                                <img {...props} loading="lazy" decoding="async" className="rounded-xl shadow-lg" />
+                                                <img {...props} loading="lazy" decoding="async" className="rounded-2xl shadow-lg my-10 border mx-auto" />
+                                            ),
+                                            h1: ({ node, ...props }) => <h1 className="text-3xl font-bold mb-6 mt-10" {...props} />,
+                                            h2: ({ node, ...props }) => <h2 className="text-2xl font-bold mb-4 mt-8" {...props} />,
+                                            h3: ({ node, ...props }) => <h3 className="text-xl font-bold mb-3 mt-6" {...props} />,
+                                            p: ({ node, ...props }) => <p className="leading-relaxed mb-5" {...props} />,
+                                            ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-6 space-y-2" {...props} />,
+                                            ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-6 space-y-2" {...props} />,
+                                            li: ({ node, ...props }) => <li className="text-muted-foreground/90" {...props} />,
+                                            blockquote: ({ node, ...props }) => (
+                                                <blockquote className="border-l-4 border-l-primary bg-primary/5 py-4 px-6 rounded-r-xl italic my-8" {...props} />
                                             )
                                         }}
                                     >{grammar.description}</ReactMarkdown>}

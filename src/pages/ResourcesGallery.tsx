@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/sheet";
 
 import { List, AutoSizer, WindowScroller, CellMeasurer, CellMeasurerCache } from "react-virtualized";
-import { cleanTextContent } from "@/utils/textCleaner";
+import { cleanTextContent, stripMarkdown } from "@/utils/textCleaner";
 
 export default function ResourcesGallery() {
   const navigate = useNavigate();
@@ -348,97 +348,111 @@ export default function ResourcesGallery() {
             <WindowScroller>
               {({ height, isScrolling, onChildScroll, scrollTop }) => (
                 <AutoSizer disableHeight>
-                  {({ width }) => (
-                    <List
-                      autoHeight
-                      height={height}
-                      isScrolling={isScrolling}
-                      onScroll={onChildScroll}
-                      scrollTop={scrollTop}
-                      width={width}
-                      rowCount={Math.ceil(filteredAndSortedImages.length / 3)}
-                      rowHeight={cache.current.rowHeight}
-                      deferredMeasurementCache={cache.current}
-                      rowRenderer={({ index, key, parent, style }) => {
-                        const startIndex = index * 3;
-                        const rowItems = filteredAndSortedImages.slice(startIndex, startIndex + 3);
+                  {({ width }) => {
+                    const itemsPerRow = width < 640 ? 1 : width < 1024 ? 2 : 3;
 
-                        return (
-                          <CellMeasurer
-                            cache={cache.current}
-                            columnIndex={0}
-                            key={key}
-                            parent={parent}
-                            rowIndex={index}
-                          >
-                            {({ registerChild }) => (
-                              <div
-                                ref={registerChild as any}
-                                style={style}
-                                className="pb-6"
-                              >
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                                  {rowItems.map((img) => (
-                                    <motion.div
-                                      key={img.id}
-                                      onClick={() => navigate(`/resources/${img.id}`)}
-                                    >
-                                      <Card className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow cursor-pointer group border-0 bg-card/50 backdrop-blur-sm relative">
-                                        <div className="relative aspect-video overflow-hidden bg-muted/30 flex items-center justify-center">
-                                          {img.imageUrl ? (
-                                            <>
-                                              <img
-                                                src={img.thumbnailUrl || img.imageUrl}
-                                                alt={img.title}
-                                                className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
-                                                loading="lazy"
-                                              />
-                                              <div className="absolute inset-0 bg-black/5 group-hover:bg-black/0 transition-colors" />
-                                            </>
-                                          ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-blue-500/20 group-hover:scale-105 transition-transform duration-500">
-                                              <GraduationCap className="h-12 w-12 text-primary/40" />
-                                            </div>
-                                          )}
-                                        </div>
+                    // Clear cache if itemsPerRow changes to ensure correct cell measurement
+                    if (parentRef.current && (parentRef.current as any)._lastItemsPerRow !== itemsPerRow) {
+                      cache.current.clearAll();
+                      (parentRef.current as any)._lastItemsPerRow = itemsPerRow;
+                    }
 
-                                        <div className="p-5 flex-1 flex flex-col">
-                                          <h3 className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                                            {img.title}
-                                          </h3>
-                                          <div className="text-muted-foreground text-sm line-clamp-3 mb-4 flex-1">
-                                            {(() => {
-                                              if (!img.description) return "Explore this resource in detail...";
-                                              const isHtml = /<[a-z][\s\S]*>/i.test(img.description);
-                                              if (isHtml) {
-                                                const tmp = document.createElement("DIV");
-                                                tmp.innerHTML = img.description;
-                                                return (tmp.textContent || tmp.innerText || "").slice(0, 100) + "...";
-                                              } else {
-                                                return cleanTextContent(img.description).slice(0, 100) + '...';
-                                              }
-                                            })()}
+                    const rowCount = Math.ceil(filteredAndSortedImages.length / itemsPerRow);
+
+                    return (
+                      <List
+                        ref={parentRef as any}
+                        autoHeight
+                        height={height}
+                        isScrolling={isScrolling}
+                        onScroll={onChildScroll}
+                        scrollTop={scrollTop}
+                        width={width}
+                        rowCount={rowCount}
+                        rowHeight={cache.current.rowHeight}
+                        deferredMeasurementCache={cache.current}
+                        rowRenderer={({ index, key, parent, style }) => {
+                          const startIndex = index * itemsPerRow;
+                          const rowItems = filteredAndSortedImages.slice(startIndex, startIndex + itemsPerRow);
+
+                          return (
+                            <CellMeasurer
+                              cache={cache.current}
+                              columnIndex={0}
+                              key={key}
+                              parent={parent}
+                              rowIndex={index}
+                            >
+                              {({ registerChild }) => (
+                                <div
+                                  ref={registerChild as any}
+                                  style={style}
+                                  className="pb-6"
+                                >
+                                  <div
+                                    className="grid gap-4 sm:gap-6"
+                                    style={{
+                                      gridTemplateColumns: `repeat(${itemsPerRow}, minmax(0, 1fr))`
+                                    }}
+                                  >
+                                    {rowItems.map((img) => (
+                                      <motion.div
+                                        key={img.id}
+                                        onClick={() => navigate(`/resources/${img.id}`)}
+                                      >
+                                        <Card className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow cursor-pointer group border-0 bg-card/50 backdrop-blur-sm relative">
+                                          <div className="relative aspect-video overflow-hidden bg-muted/30 flex items-center justify-center">
+                                            {img.imageUrl ? (
+                                              <>
+                                                <img
+                                                  src={img.thumbnailUrl || img.imageUrl}
+                                                  alt={img.title}
+                                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                  loading="lazy"
+                                                  width={400}
+                                                  height={225}
+                                                />
+                                                <div className="absolute inset-0 bg-black/5 group-hover:bg-black/0 transition-colors" />
+                                              </>
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-blue-500/20 group-hover:scale-105 transition-transform duration-500">
+                                                <GraduationCap className="h-12 w-12 text-primary/40" />
+                                              </div>
+                                            )}
                                           </div>
-                                          <div className="flex items-center justify-between mt-auto pt-2 border-t">
-                                            <div className="text-primary text-sm font-medium flex items-center">
-                                              Read Article <ZoomIn className="ml-2 h-4 w-4" />
+
+                                          <div className="p-5 flex-1 flex flex-col">
+                                            <h3 className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                                              {img.title}
+                                            </h3>
+                                            <div className="text-muted-foreground text-sm line-clamp-3 mb-4 flex-1">
+                                              {(() => {
+                                                if (!img.description) return "Explore this resource in detail...";
+                                                const cleanText = stripMarkdown(img.description);
+                                                return cleanText.length > 100 ? cleanText.slice(0, 100) + '...' : cleanText;
+                                              })()}
                                             </div>
-                                            <span className="text-xs text-muted-foreground">
-                                              {new Date(img.createdAt).toLocaleDateString()}
-                                            </span>
+                                            <div className="flex items-center justify-between mt-auto pt-2 border-t">
+                                              <div className="text-primary text-sm font-medium flex items-center">
+                                                Read Article <ZoomIn className="ml-2 h-4 w-4" />
+                                              </div>
+                                              <span className="text-xs text-muted-foreground">
+                                                {new Date(img.createdAt).toLocaleDateString()}
+                                              </span>
+                                            </div>
                                           </div>
-                                        </div>
-                                      </Card>
-                                    </motion.div>
-                                  ))}
+                                        </Card>
+                                      </motion.div>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </CellMeasurer>
-                        );
-                      }}
-                    />
-                  )}
+                              )}
+                            </CellMeasurer>
+                          );
+                        }}
+                      />
+                    );
+                  }}
                 </AutoSizer>
               )}
             </WindowScroller>

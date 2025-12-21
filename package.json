@@ -79,6 +79,7 @@
     "react-virtualized-auto-sizer": "^1.0.26",
     "react-window": "^2.2.3",
     "recharts": "^2.15.4",
+    "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "sonner": "^1.7.4",
     "sweetalert2": "^11.26.3",

@@ -314,8 +314,8 @@ export default function AdminDashboard() {
                                 <div className="flex items-center justify-between">
                                     <CardTitle>Content Growth</CardTitle>
                                     <div className="flex gap-1">
-                                        <Button variant={timeRange === 'week' ? 'secondary' : 'ghost'} size="xs" onClick={() => setTimeRange('week')}>7d</Button>
-                                        <Button variant={timeRange === 'month' ? 'secondary' : 'ghost'} size="xs" onClick={() => setTimeRange('month')}>30d</Button>
+                                        <Button variant={timeRange === 'week' ? 'secondary' : 'ghost'} size="sm" onClick={() => setTimeRange('week')}>7d</Button>
+                                        <Button variant={timeRange === 'month' ? 'secondary' : 'ghost'} size="sm" onClick={() => setTimeRange('month')}>30d</Button>
                                     </div>
                                 </div>
                                 <CardDescription>Words and Resources added over time</CardDescription>
@@ -488,7 +488,7 @@ export default function AdminDashboard() {
                                             paddingAngle={2}
                                             dataKey="value"
                                         >
-                                            {stats?.pieData.map((entry, index) => (
+                                            {stats?.pieData.map((_entry: any, index: number) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -497,7 +497,7 @@ export default function AdminDashboard() {
                                 </ResponsiveContainer>
                             </div>
                             <div className="w-full sm:w-1/3 grid grid-cols-2 gap-4">
-                                {stats?.pieData.map((entry, index) => (
+                                {stats?.pieData.map((entry: any, index: number) => (
                                     <div key={entry.name} className="flex items-center gap-2">
                                         <div
                                             className="w-3 h-3 rounded-full"
@@ -545,7 +545,7 @@ export default function AdminDashboard() {
                             <ul className="space-y-2 text-sm">
                                 {stats?.qualityScores.examples < 90 && (
                                     <li className="flex items-center gap-2 opacity-80">
-                                        • Add example sentences to <strong>{stats?.totalWords - stats?.counts.withExamples}</strong> words to improve context.
+                                        • Add example sentences to <strong>{(stats?.totalWords || 0) - (stats?.counts.withExamples || 0)}</strong> words to improve context.
                                     </li>
                                 )}
                                 <li className="flex items-center gap-2 opacity-80">
@@ -557,6 +557,7 @@ export default function AdminDashboard() {
                             </ul>
                         </CardContent>
                     </Card>
+
                 </TabsContent>
             </Tabs>
         </div>

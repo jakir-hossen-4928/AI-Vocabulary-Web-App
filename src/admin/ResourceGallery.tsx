@@ -105,48 +105,7 @@ export default function AdminResourceGallery() {
 
             await addResource.mutateAsync(docData);
 
-            // Sync with PostgreSQL Backend (Dual Write)
-            const apiBase = import.meta.env.VITE_VOCAB_API;
-            if (apiBase) {
-                try {
-                    console.log('Syncing resource to PostgreSQL Backend...');
-                    const response = await fetch(`${apiBase}/resources`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(docData),
-                    });
-
-                    if (!response.ok) {
-                        if (response.status === 409) {
-                            // Duplicate resource - show warning instead of error
-                            const errorData = await response.json();
-                            console.warn('Resource already exists in PostgreSQL:', errorData);
-                            showErrorToast(`Resource already exists in database (duplicate title)`);
-                            // Don't throw error - the Firestore save was successful
-                        } else if (response.status === 429) {
-                            // Rapid duplicate submission - show warning
-                            const errorData = await response.json();
-                            console.warn('Rapid duplicate submission detected:', errorData);
-                            showErrorToast(`Please wait a few seconds before creating another resource`);
-                            // Don't throw error - the Firestore save was successful
-                        } else {
-                            const errorText = await response.text();
-                            console.error('Backend sync failed:', response.status, errorText);
-                            throw new Error(`Backend Sync Failed: ${response.status} ${response.statusText} - ${errorText}`);
-                        }
-                    } else {
-                        console.log('Successfully synced resource to PostgreSQL Backend');
-                    }
-                } catch (apiError) {
-                    console.error('Failed to sync resource to backend:', apiError);
-                    showErrorToast(`Saved to Firebase but failed to sync to Backend API: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
-                }
-            } else {
-                console.warn('VITE_VOCAB_API not configured, skipping PostgreSQL sync');
-                showErrorToast('Resource saved to Firebase but PostgreSQL sync skipped (API not configured)');
-            }
+            // Sync logic removed - Firebase only
 
             // Toast is shown by the mutation hook
             resetForm();
@@ -182,34 +141,7 @@ export default function AdminResourceGallery() {
 
             await updateResource.mutateAsync(updateData);
 
-            // Sync with PostgreSQL Backend (Dual Write)
-            const apiBase = import.meta.env.VITE_VOCAB_API;
-            if (apiBase) {
-                try {
-                    console.log('Syncing updated resource to PostgreSQL Backend...');
-                    const response = await fetch(`${apiBase}/resources/${editingId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(updateData),
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('Backend sync failed:', response.status, errorText);
-                        throw new Error(`Backend Sync Failed: ${response.status} ${response.statusText} - ${errorText}`);
-                    }
-
-                    console.log('Successfully synced updated resource to PostgreSQL Backend');
-                } catch (apiError) {
-                    console.error('Failed to sync updated resource to backend:', apiError);
-                    showErrorToast(`Updated in Firebase but failed to sync to Backend API: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
-                }
-            } else {
-                console.warn('VITE_VOCAB_API not configured, skipping PostgreSQL sync');
-                showErrorToast('Resource updated in Firebase but PostgreSQL sync skipped (API not configured)');
-            }
+            // Sync logic removed - Firebase only
 
             // Toast is shown by the mutation hook
             resetForm();
@@ -231,30 +163,7 @@ export default function AdminResourceGallery() {
         if (isConfirmed) {
             await deleteResource.mutateAsync(id);
 
-            // Sync with PostgreSQL Backend (Dual Write)
-            const apiBase = import.meta.env.VITE_VOCAB_API;
-            if (apiBase) {
-                try {
-                    console.log('Syncing resource deletion to PostgreSQL Backend...');
-                    const response = await fetch(`${apiBase}/resources/${id}`, {
-                        method: 'DELETE',
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('Backend sync failed:', response.status, errorText);
-                        throw new Error(`Backend Sync Failed: ${response.status} ${response.statusText} - ${errorText}`);
-                    }
-
-                    console.log('Successfully synced resource deletion to PostgreSQL Backend');
-                } catch (apiError) {
-                    console.error('Failed to sync resource deletion to backend:', apiError);
-                    showErrorToast(`Deleted from Firebase but failed to sync to Backend API: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
-                }
-            } else {
-                console.warn('VITE_VOCAB_API not configured, skipping PostgreSQL sync');
-                showErrorToast('Resource deleted from Firebase but PostgreSQL sync skipped (API not configured)');
-            }
+            // Sync logic removed - Firebase only
 
             // Toast is shown by the mutation hook
         }

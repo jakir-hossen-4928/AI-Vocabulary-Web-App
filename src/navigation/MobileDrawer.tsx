@@ -19,6 +19,7 @@ const mainNavItems = [
     { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
     { path: "/favorites", icon: Heart, label: "Favorites" },
     { path: "/flashcards", icon: Layers, label: "Flashcards" },
+    { path: "/resources", icon: GraduationCap, label: "Resources" },
 ];
 
 const adminNavItems = [
@@ -111,36 +112,7 @@ export const MobileDrawer = ({ open, onOpenChange }: MobileDrawerProps) => {
                 {/* Navigation Content */}
                 <ScrollArea className="flex-1">
                     <div className="px-3 py-2 space-y-1">
-                        <SectionHeader title="Cambridge Dictionary" />
-                        <div className="px-4 py-2">
-                            <form
-                                action='https://dictionary.cambridge.org/us/search/english/direct/'
-                                method='get'
-                                target='_blank'
-                                className="relative group"
-                            >
-                                <input type='hidden' name='utm_source' value='widget_searchbox_source' />
-                                <input type='hidden' name='utm_medium' value='widget_searchbox' />
-                                <input type='hidden' name='utm_campaign' value='widget_tracking' />
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                <input
-                                    className='w-full pl-9 pr-10 h-10 bg-muted/50 border-transparent focus:border-primary/30 focus:bg-background transition-all rounded-xl text-sm placeholder:text-muted-foreground focus:ring-4 focus:ring-primary/5 outline-none'
-                                    name='q'
-                                    placeholder='Search word...'
-                                    type='search'
-                                    autoComplete='off'
-                                />
-                                <button
-                                    type='submit'
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-primary/10 rounded-lg text-primary transition-colors"
-                                >
-                                    <div className="bg-primary h-1.5 w-1.5 rounded-full" />
-                                </button>
-                            </form>
-
-                        </div>
-
-                        <SectionHeader title="Menu" />
+                        <SectionHeader title="Dashboard" />
                         {mainNavItems.map((item) => (
                             <NavItem key={item.path} item={item} />
                         ))}

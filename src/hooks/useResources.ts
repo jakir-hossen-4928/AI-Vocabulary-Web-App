@@ -143,20 +143,6 @@ export const useResourceMutations = () => {
             const docRef = await addDoc(collection(db, "grammar_images"), newResource);
             const resourceWithId = { id: docRef.id, ...newResource };
 
-            // Sync with Backend
-            const apiBase = import.meta.env.VITE_VOCAB_API;
-            if (apiBase) {
-                try {
-                    await fetch(`${apiBase}/resources`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(resourceWithId),
-                    });
-                } catch (err) {
-                    console.error("Backend sync failed (addResource):", err);
-                }
-            }
-
             return resourceWithId;
         },
         onSuccess: async (newResource) => {
@@ -204,20 +190,6 @@ export const useResourceMutations = () => {
     const updateResource = useMutation({
         mutationFn: async ({ id, ...data }: Partial<GrammarImage> & { id: string }) => {
             await updateDoc(doc(db, "grammar_images", id), data);
-
-            // Sync with Backend
-            const apiBase = import.meta.env.VITE_VOCAB_API;
-            if (apiBase) {
-                try {
-                    await fetch(`${apiBase}/resources/${id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data),
-                    });
-                } catch (err) {
-                    console.error("Backend sync failed (updateResource):", err);
-                }
-            }
 
             return { id, ...data };
         },
@@ -276,17 +248,7 @@ export const useResourceMutations = () => {
         mutationFn: async (id: string) => {
             await deleteDoc(doc(db, "grammar_images", id));
 
-            // Sync with Backend
-            const apiBase = import.meta.env.VITE_VOCAB_API;
-            if (apiBase) {
-                try {
-                    await fetch(`${apiBase}/resources/${id}`, {
-                        method: 'DELETE',
-                    });
-                } catch (err) {
-                    console.error("Backend sync failed (deleteResource):", err);
-                }
-            }
+            return id;
 
             return id;
         },
