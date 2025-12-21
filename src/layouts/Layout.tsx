@@ -41,7 +41,7 @@ export const Layout = () => {
             <MobileHeader onMenuClick={() => setDrawerOpen(true)} />
             <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
             <main
-                className={`pb-[calc(4rem+var(--safe-area-bottom))] md:pb-0 min-h-screen pt-[calc(52px+var(--safe-area-top))] md:pt-0 transition-all duration-300 ${sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
+                className={`pb-[calc(4rem+var(--safe-area-bottom))] md:pb-0 min-h-screen pt-[calc(52px+var(--safe-area-top))] md:pt-0 transition-all duration-300 ${sidebarCollapsed ? 'md:pl-24' : 'md:pl-72'
                     }`}
             >
                 <Outlet />
