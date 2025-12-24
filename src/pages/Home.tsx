@@ -22,23 +22,20 @@ import { safeTimestamp } from "@/utils/dateUtils";
 import { vocabularyService } from "@/services/vocabularyService";
 import { History } from "lucide-react";
 import { metaService } from "@/services/metaService";
+import { aiPrompts } from "@/services/aiPromptService";
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 300);
-  const { data, isLoading } = useVocabularies();
+  const { data, isLoading, isRefetching } = useVocabularies(debouncedSearch);
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
 
   // Use Dexie-backed favorites
   const { favorites, toggleFavorite } = useFavorites();
 
-  // Online dictionary state
-  const [onlineResults, setOnlineResults] = useState<Vocabulary[]>([]);
-  const [localSearchResults, setLocalSearchResults] = useState<Vocabulary[]>([]);
-  const [isSearchingOnline, setIsSearchingOnline] = useState(false);
 
   // Chat State
   const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
@@ -52,16 +49,33 @@ export default function Home() {
 
   // Responsive Grid columns
   const [columns, setColumns] = useState(1);
+  // Consolidated Window Event Listeners
   useEffect(() => {
-    const updateColumns = () => {
+    const handleUIUpdates = () => {
       const width = window.innerWidth;
+      // 1. Update grid columns
       if (width >= 1024) setColumns(3);
       else if (width >= 768) setColumns(2);
       else setColumns(1);
+
+      // 2. Auto-close details modal on mobile/tablet resize
+      if (width < 1024) {
+        setIsDetailsModalOpen(prev => prev ? false : prev);
+      }
     };
-    updateColumns();
-    window.addEventListener('resize', updateColumns);
-    return () => window.removeEventListener('resize', updateColumns);
+
+    const handleStorage = () => {
+      setModel(getSelectedModel() || null);
+    };
+
+    handleUIUpdates();
+    window.addEventListener('resize', handleUIUpdates);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('resize', handleUIUpdates);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
@@ -81,31 +95,12 @@ export default function Home() {
     }
   }, [isListening, interimTranscript]);
 
-  useEffect(() => {
-    const savedModel = getSelectedModel();
-    setModel(savedModel || null);
-    const handler = () => {
-      setModel(getSelectedModel() || null);
-    };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, []);
 
   useEffect(() => {
     metaService.resetToDefault();
   }, []);
 
   // Close details modal on mobile/tablet resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024 && isDetailsModalOpen) {
-        setIsDetailsModalOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isDetailsModalOpen]);
 
   // Sync search query with URL
   useEffect(() => {
@@ -121,37 +116,12 @@ export default function Home() {
     setDisplayCount(20); // Reset display count on new search
   }, [debouncedSearch, setSearchParams]);
 
-  // Centralized Search logic using vocabularyService
+  // Refresh search history when query changes
   useEffect(() => {
-    const performSearch = async () => {
-      const trimmedQuery = debouncedSearch.trim();
-
-      if (!trimmedQuery) {
-        setOnlineResults([]);
-        // Fetch search history when query is empty
-        const history = await vocabularyService.getSearchHistory(10);
-        setSearchHistory(history);
-        return;
-      }
-
-      setIsSearchingOnline(true);
-      try {
-        const results = await vocabularyService.search(trimmedQuery);
-        // Split results into online vs local for UI organization
-        setOnlineResults(results.filter(r => r.isOnline || r.isFromAPI));
-        setLocalSearchResults(results.filter(r => !r.isOnline && !r.isFromAPI));
-      } catch (error) {
-        console.error('[Home] Search failed:', error);
-      } finally {
-        setIsSearchingOnline(false);
-      }
-    };
-
-    performSearch();
+    vocabularyService.getSearchHistory(10).then(setSearchHistory);
   }, [debouncedSearch]);
   const clearSearch = () => {
     setSearchQuery("");
-    setOnlineResults([]);
     setDisplayCount(20);
   };
 
@@ -168,14 +138,14 @@ export default function Home() {
     if (window.innerWidth < 1024) {
       navigate(`/chat/${id}`, {
         state: {
-          initialPrompt: `The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`
+          initialPrompt: aiPrompts.improveMeaning(vocab)
         }
       });
       return;
     }
 
     setChatVocab(vocab);
-    setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
+    setChatInitialPrompt(aiPrompts.improveMeaning(vocab));
     setIsChatOpen(true);
   };
 
@@ -184,9 +154,8 @@ export default function Home() {
   // Combine local and online results
   const allResults = useMemo(() => {
     if (!debouncedSearch.trim()) return vocabularies.slice(0, 8);
-    // Use the comprehensive results from vocabularyService
-    return [...onlineResults, ...localSearchResults];
-  }, [debouncedSearch, localSearchResults, onlineResults, vocabularies]);
+    return vocabularies;
+  }, [debouncedSearch, vocabularies]);
   const hasResults = allResults.length > 0;
 
   return (
@@ -351,7 +320,7 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 min-h-[400px] pb-32 md:pb-12">
         <AnimatePresence mode="wait">
-          {isLoading || isSearchingOnline ? (
+          {isLoading ? (
             <motion.div
               key="loading"
               initial={{ opacity: 0 }}
@@ -409,7 +378,7 @@ export default function Home() {
                       index={index}
                       isFavorite={favorites.includes(vocab.id)}
                       onToggleFavorite={toggleFavorite}
-                      searchQuery={searchQuery}
+                      searchQuery={debouncedSearch}
                       onClick={() => {
                         if (!vocab.isOnline) {
                           if (window.innerWidth < 1024) {

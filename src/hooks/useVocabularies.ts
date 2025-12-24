@@ -18,14 +18,22 @@ import { useState, useEffect } from "react";
 const SYNC_KEY = 'vocabularies';
 const CACHE_DURATION_MINUTES = 10; // Increased to 10 minutes for better efficiency
 
-export const useVocabularies = () => {
+import { vocabularyService } from "@/services/vocabularyService";
+
+export const useVocabularies = (searchQuery?: string) => {
     const queryClient = useQueryClient();
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const queryResult = useQuery({
-        queryKey: ["vocabularies"],
+        queryKey: ["vocabularies", searchQuery?.trim() || ""],
         queryFn: async () => {
             try {
+                // If searching, use the dedicated search service
+                if (searchQuery?.trim()) {
+                    return await vocabularyService.search(searchQuery);
+                }
+
+                // 1. Try to get data from Dexie first (Fast!)
                 // 1. Try to get data from Dexie first (Fast!)
                 const cached = await dexieService.getAllVocabularies();
                 const shouldSync = await dexieService.shouldSync(SYNC_KEY, CACHE_DURATION_MINUTES);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams, useLocation, useNavigationType } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -41,12 +41,14 @@ import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { useViewPreference } from "@/hooks/useViewPreference";
 import { vocabularyService } from "@/services/vocabularyService";
 import { List, AutoSizer, WindowScroller, CellMeasurer, CellMeasurerCache } from "react-virtualized";
+import { aiPrompts } from "@/services/aiPromptService";
 
 export default function Vocabularies() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: vocabularies = [], isLoading, refresh, isRefetching } = useVocabularies();
-  const { deleteVocabulary, updateVocabulary } = useVocabularyMutations();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+  const debouncedSearch = useDebounce(searchQuery, 150);
+  const { data: vocabData = [], isLoading, refresh, isRefetching } = useVocabularies(debouncedSearch);
+  const { deleteVocabulary, updateVocabulary } = useVocabularyMutations();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,9 +67,6 @@ export default function Vocabularies() {
   const [isWorkerFiltering, setIsWorkerFiltering] = useState(false);
   const workerRef = useRef<Worker | null>(null);
 
-  // Online dictionary state
-  const [onlineResults, setOnlineResults] = useState<Vocabulary[]>([]);
-  const [isSearchingOnline, setIsSearchingOnline] = useState(false);
 
   // Chat State
   const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
@@ -99,7 +98,6 @@ export default function Vocabularies() {
     }
   }, [isListening, interimTranscript]);
 
-  const debouncedSearch = useDebounce(searchQuery, 150);
 
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -134,16 +132,15 @@ export default function Vocabularies() {
     }
   }, [user, navigate]);
 
-  // Sync selectedVocab with updated data from cache (e.g. after edit)
+  // Sync selectedVocab with updated data from hook
   useEffect(() => {
-    if (selectedVocab && vocabularies.length > 0) {
-      const updatedVocab = vocabularies.find(v => v.id === selectedVocab.id);
-      // Only update if the object reference has changed (meaning data has been updated in cache)
+    if (selectedVocab && vocabData.length > 0) {
+      const updatedVocab = vocabData.find(v => v.id === selectedVocab.id);
       if (updatedVocab && updatedVocab !== selectedVocab) {
         setSelectedVocab(updatedVocab);
       }
     }
-  }, [vocabularies, selectedVocab]);
+  }, [vocabData, selectedVocab]);
 
   // Initialize Worker
   useEffect(() => {
@@ -161,71 +158,37 @@ export default function Vocabularies() {
     };
   }, []);
 
-  // Post message to worker
+  // Post message to worker for filtering and sorting
   useEffect(() => {
-    if (workerRef.current && vocabularies.length > 0) {
-      // Only show loading for search queries or filter changes, not initial load
+    if (workerRef.current && vocabData.length > 0) {
       if (debouncedSearch || selectedPos !== "all" || showFavorites || sortOrder !== "newest") {
         setIsWorkerFiltering(true);
       }
       workerRef.current.postMessage({
-        vocabularies,
+        vocabularies: vocabData,
         searchQuery: debouncedSearch,
         selectedPos,
         sortOrder,
         showFavorites,
         favorites,
       });
+    } else if (vocabData.length === 0) {
+      setFilteredVocabs([]);
+      setIsWorkerFiltering(false);
     }
-  }, [vocabularies, debouncedSearch, selectedPos, sortOrder, showFavorites, favorites]);
+  }, [vocabData, debouncedSearch, selectedPos, sortOrder, showFavorites, favorites]);
 
   // Clear cache when search or data changes
   useEffect(() => {
     cache.current.clearAll();
   }, [debouncedSearch, filteredVocabs]);
 
-  // Search online dictionary when no local results
-  useEffect(() => {
-    const searchOnline = async () => {
-      // Only search if there's a search query and no filters active
-      if (!debouncedSearch.trim() || selectedPos !== "all" || showFavorites || isLoading) {
-        setOnlineResults([]);
-        return;
-      }
+  // Derive online results from the unified data
+  const onlineResults = useMemo(() => {
+    return vocabData.filter(v => v.isOnline || v.isFromAPI);
+  }, [vocabData]);
 
-      // Check if we have local results
-      if (filteredVocabs.length === 0 && !isWorkerFiltering) {
-        setIsSearchingOnline(true);
-        try {
-          // Use vocabularyService.search which already handles local -> cache -> online logic
-          const results = await vocabularyService.search(debouncedSearch);
-          // For this page, we only show results that came from outside the normal local dataset
-          const onlineOnly = results.filter(r => r.isOnline || r.isFromAPI);
-          setOnlineResults(onlineOnly);
-        } catch (error) {
-          console.error('[Vocabularies] Online search failed:', error);
-          setOnlineResults([]);
-        } finally {
-          setIsSearchingOnline(false);
-        }
-      } else {
-        setOnlineResults([]);
-      }
-
-      // Refresh search history
-      if (debouncedSearch) {
-        const history = await vocabularyService.getSearchHistory(10);
-        setSearchHistory(history);
-      }
-    };
-
-    // Load initial history
-    if (!debouncedSearch) {
-      vocabularyService.getSearchHistory(10).then(setSearchHistory);
-    }
-
-    searchOnline();
-  }, [debouncedSearch, filteredVocabs.length, isWorkerFiltering, selectedPos, showFavorites, isLoading]);
+  const isSearchingOnline = isLoading && !!debouncedSearch;
 
   // Sync filters with URL
   useEffect(() => {
@@ -246,6 +209,13 @@ export default function Vocabularies() {
     setSearchParams(params, { replace: true });
   }, [debouncedSearch, selectedPos, sortOrder, showFavorites, setSearchParams]);
 
+  // Update search history when search is performed
+  useEffect(() => {
+    if (debouncedSearch) {
+      vocabularyService.getSearchHistory(10).then(setSearchHistory);
+    }
+  }, [debouncedSearch]);
+
   const activeFiltersCount = (selectedPos !== "all" ? 1 : 0) + (showFavorites ? 1 : 0) + (sortOrder !== "newest" ? 1 : 0);
 
   const clearFilters = () => {
@@ -253,33 +223,32 @@ export default function Vocabularies() {
     setSortOrder("newest");
     setShowFavorites(false);
     setSearchQuery("");
-    setOnlineResults([]);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       await deleteVocabulary.mutateAsync(id);
     } catch (error) {
       console.error("Failed to delete vocabulary:", error);
     }
-  };
+  }, [deleteVocabulary]);
 
-  const handleImproveMeaning = async (id: string) => {
-    const vocab = vocabularies.find(v => v.id === id);
+  const handleImproveMeaning = useCallback(async (id: string) => {
+    const vocab = filteredVocabs.find(v => v.id === id); // Use filteredVocabs to avoid extra closure
     if (!vocab) return;
 
     if (window.innerWidth < 1024) {
       navigate(`/chat/${id}`, {
         state: {
-          initialPrompt: `The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`
+          initialPrompt: aiPrompts.improveMeaning(vocab)
         }
       });
     } else {
       setChatVocab(vocab);
-      setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
+      setChatInitialPrompt(aiPrompts.improveMeaning(vocab));
       setIsChatOpen(true);
     }
-  };
+  }, [filteredVocabs, navigate]);
 
   const handleRefresh = async () => {
     try {
@@ -313,7 +282,7 @@ export default function Vocabularies() {
     return () => window.removeEventListener('resize', handleResize);
   }, [isDetailsModalOpen]);
 
-  const handleVocabClick = (vocab: Vocabulary) => {
+  const handleVocabClick = useCallback((vocab: Vocabulary) => {
     // Check if mobile/tablet device
     if (window.innerWidth < 1024) {
       navigate(`/vocabularies/${vocab.id}`);
@@ -330,7 +299,7 @@ export default function Vocabularies() {
     } else {
       navigate(`/vocabularies/${vocab.id}`);
     }
-  };
+  }, [navigate, preference, savePreference]);
 
   const handlePreferenceSelect = (pref: "modal" | "page") => {
     savePreference(pref);
@@ -346,16 +315,71 @@ export default function Vocabularies() {
     }
   };
 
-  const handleResume = async () => {
-    if (!lastViewedId || vocabularies.length === 0) return;
+  const handleResume = useCallback(async () => {
+    if (!lastViewedId || filteredVocabs.length === 0) return;
 
-    const vocab = vocabularies.find(v => v.id === lastViewedId);
+    const vocab = filteredVocabs.find(v => v.id === lastViewedId);
     if (vocab) {
       handleVocabClick(vocab);
     } else {
       toast.info("Last viewed word not found in current list");
     }
-  };
+  }, [lastViewedId, filteredVocabs, handleVocabClick]);
+
+  const rowRenderer = useCallback(({ index, key, parent, style }: any) => {
+    const itemsRow = [];
+    for (let i = 0; i < columns; i++) {
+      const itemIndex = index * columns + i;
+      if (itemIndex < filteredVocabs.length) {
+        itemsRow.push({ item: filteredVocabs[itemIndex], index: itemIndex });
+      }
+    }
+
+    return (
+      <CellMeasurer
+        cache={cache.current}
+        columnIndex={0}
+        key={key}
+        parent={parent}
+        rowIndex={index}
+      >
+        {({ registerChild }) => (
+          <div
+            ref={registerChild as any}
+            style={style}
+            className="py-3"
+          >
+            <div
+              className="grid gap-4 sm:gap-6"
+              style={{
+                gridTemplateColumns: itemsRow.length < columns && filteredVocabs.length < columns
+                  ? `repeat(${itemsRow.length}, minmax(0, 500px))`
+                  : `repeat(${columns}, 1fr)`,
+                justifyContent: itemsRow.length < columns && filteredVocabs.length < columns ? 'center' : 'start',
+              }}
+            >
+              {itemsRow.map(({ item, index }) => (
+                <div key={item.id} className="h-full">
+                  <VocabCard
+                    vocab={item}
+                    index={index}
+                    isFavorite={favorites.includes(item.id)}
+                    onToggleFavorite={toggleFavorite}
+                    searchQuery={debouncedSearch}
+                    onClick={() => handleVocabClick(item)}
+                    onDelete={handleDelete}
+                    onImproveMeaning={handleImproveMeaning}
+                    isAdmin={isAdmin}
+                    className="h-full"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CellMeasurer>
+    );
+  }, [columns, filteredVocabs, favorites, toggleFavorite, searchQuery, handleVocabClick, handleDelete, handleImproveMeaning, isAdmin]);
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
@@ -724,60 +748,7 @@ export default function Vocabularies() {
                         rowHeight={cache.current.rowHeight}
                         deferredMeasurementCache={cache.current}
                         overscanRowCount={10}
-                        rowRenderer={({ index, key, parent, style }) => {
-                          const itemsRow = [];
-                          for (let i = 0; i < columns; i++) {
-                            const itemIndex = index * columns + i;
-                            if (itemIndex < filteredVocabs.length) {
-                              itemsRow.push({ item: filteredVocabs[itemIndex], index: itemIndex });
-                            }
-                          }
-
-                          return (
-                            <CellMeasurer
-                              cache={cache.current}
-                              columnIndex={0}
-                              key={key}
-                              parent={parent}
-                              rowIndex={index}
-                            >
-                              {({ registerChild }) => (
-                                <div
-                                  ref={registerChild as any}
-                                  style={style}
-                                  className="py-3"
-                                >
-                                  <div
-                                    className="grid gap-4 sm:gap-6"
-                                    style={{
-                                      gridTemplateColumns: itemsRow.length < columns && filteredVocabs.length < columns
-                                        ? `repeat(${itemsRow.length}, minmax(0, 500px))`
-                                        : `repeat(${columns}, 1fr)`,
-                                      justifyContent: itemsRow.length < columns && filteredVocabs.length < columns ? 'center' : 'start',
-                                    }}
-                                  >
-                                    {itemsRow.map(({ item, index }) => (
-                                      <div key={item.id} className="h-full">
-                                        <VocabCard
-                                          vocab={item}
-                                          index={index}
-                                          isFavorite={favorites.includes(item.id)}
-                                          onToggleFavorite={toggleFavorite}
-                                          searchQuery={searchQuery}
-                                          onClick={() => handleVocabClick(item)}
-                                          onDelete={handleDelete}
-                                          onImproveMeaning={handleImproveMeaning}
-                                          isAdmin={isAdmin}
-                                          className="h-full"
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </CellMeasurer>
-                          );
-                        }}
+                        rowRenderer={rowRenderer}
                       />
                     )}
                   </AutoSizer>
@@ -812,7 +783,7 @@ export default function Vocabularies() {
                       index={index}
                       isFavorite={false}
                       onToggleFavorite={() => { }}
-                      searchQuery={searchQuery}
+                      searchQuery={debouncedSearch}
                       onClick={() => { }} // Don't navigate for online results
                       isAdmin={false}
                       className="h-full"

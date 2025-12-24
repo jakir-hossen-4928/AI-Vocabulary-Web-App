@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut, Shield, Download, BookOpen, TrendingUp, Monitor, Layout, Mic } from "lucide-react";
+import { User, LogOut, Shield, Download, BookOpen, TrendingUp, Monitor, Layout, Mic, ExternalLink, Copy, Heart, Sparkles, Zap } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTTS } from "@/hooks/useTTS";
 import { Label } from "@/components/ui/label";
@@ -304,11 +304,11 @@ export default function Profile() {
             transition={{ delay: 0.4 }}
             className="space-y-3 mb-6"
           >
-            <h3 className="text-lg font-semibold mb-3">Admin Tools</h3>
+            <h3 className="text-lg font-semibold mb-3 px-1">Admin Tools</h3>
             <Button
               onClick={() => navigate("/admin/users")}
               variant="outline"
-              className="w-full border-primary/20"
+              className="w-full border-primary/20 hover:bg-primary/5 dark:hover:bg-primary/5"
             >
               <User className="mr-2 h-4 w-4 text-primary" />
               Manage Users
@@ -316,7 +316,7 @@ export default function Profile() {
             <Button
               onClick={() => navigate("/admin/duplicates")}
               variant="outline"
-              className="w-full border-primary/20"
+              className="w-full border-primary/20 hover:bg-primary/5 dark:hover:bg-primary/5"
             >
               <Shield className="mr-2 h-4 w-4 text-primary" />
               Duplicate Manager

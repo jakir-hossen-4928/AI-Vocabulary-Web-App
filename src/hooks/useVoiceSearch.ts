@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNative } from './useNative';
 
@@ -55,6 +55,19 @@ export function useVoiceSearch(onResult: (transcript: string) => void) {
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const toastIdRef = useRef<string | number | null>(null);
     const hasFinalRef = useRef(false);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                try {
+                    recognitionRef.current.abort();
+                } catch (e) {
+                    console.error("[useVoiceSearch] Cleanup error:", e);
+                }
+            }
+        };
+    }, []);
 
     const toggleLanguage = useCallback(() => {
         haptic('light');

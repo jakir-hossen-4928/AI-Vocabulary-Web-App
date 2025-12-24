@@ -1,4 +1,4 @@
-import { Home, BookOpen, GraduationCap, User, Activity, Globe, Shield, Users, LogOut, BarChart, Layers, Upload, Heart, Plus, Wand2, ChevronLeft, ChevronRight, LayoutDashboard, Database, Settings, Download, Search } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, Shield, Users, LogOut, BarChart, Layers, Upload, Heart, Plus, Wand2, ChevronLeft, ChevronRight, LayoutDashboard, Database, Settings, Download, Search, Gift } from "lucide-react";
 import { NavLink } from "@/navigation/NavLink";
 import { useNative } from "@/hooks/useNative";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,8 @@ const mainNavItems = [
     { path: "/flashcards", icon: Layers, label: "Flashcards" },
     { path: "/dictionary", icon: Globe, label: "Dictionary" },
     { path: "/resources", icon: GraduationCap, label: "Resources" },
+    { path: "/surprise", icon: Gift, label: "Special Gift 🎁" },
+    { path: "/profile", icon: User, label: "Profile" },
     { path: "/download", icon: Download, label: "Download App" },
 ];
 

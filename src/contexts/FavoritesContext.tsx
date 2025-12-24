@@ -31,6 +31,14 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         loadFavorites();
+
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'favorites_cache_key') {
+                loadFavorites();
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
     }, [loadFavorites]);
 
     const toggleFavorite = useCallback(async (id: string) => {
@@ -43,6 +51,7 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
                 await dexieService.addFavorite(id);
                 setFavorites(prev => [id, ...prev]);
             }
+            localStorage.setItem('favorites_cache_key', Date.now().toString());
         } catch (error) {
             toast.error("Failed to update favorites");
             console.error(error);
@@ -61,6 +70,7 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
         try {
             await dexieService.clearFavorites();
             setFavorites([]);
+            localStorage.setItem('favorites_cache_key', Date.now().toString());
             toast.success("Favorites cleared");
         } catch (error) {
             toast.error("Failed to clear favorites");

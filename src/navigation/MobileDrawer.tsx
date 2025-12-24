@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield, Layers, Upload, Heart, Plus, Wand2, LayoutDashboard, Settings, Search, Download } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield, Layers, Upload, Heart, Plus, Wand2, LayoutDashboard, Settings, Search, Download, Gift } from "lucide-react";
 import { NavLink } from "@/navigation/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "firebase/auth";
@@ -16,9 +16,13 @@ import { Logo } from "./Logo";
 
 const mainNavItems = [
     { path: "/home", icon: Home, label: "Home" },
+    { path: "/vocabularies", icon: BookOpen, label: "Vocabulary" },
     { path: "/dictionary", icon: Globe, label: "Online Dictionary" },
     { path: "/flashcards", icon: Layers, label: "Flashcards" },
     { path: "/favorites", icon: Heart, label: "Favorites" },
+    { path: "/resources", icon: GraduationCap, label: "Resources" },
+    { path: "/surprise", icon: Gift, label: "Special Gift 🎁❤️" },
+    { path: "/profile", icon: User, label: "Profile" },
     { path: "/download", icon: Download, label: "Download App" },
 ];
 
@@ -46,7 +50,7 @@ export const MobileDrawer = ({ open, onOpenChange }: MobileDrawerProps) => {
     const handleCambridgeSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (cambridgeQuery.trim()) {
-            haptic('medium');
+            haptic('success');
             window.open(`https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(cambridgeQuery.trim())}`, '_blank');
             setCambridgeQuery("");
             onOpenChange(false);

@@ -15,6 +15,7 @@ import { VocabularyDetailsModal } from "@/components/VocabularyDetailsModal";
 import { Search, X, Loader2, Heart, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/useDebounce";
+import { aiPrompts } from "@/services/aiPromptService";
 
 export default function Favorites() {
   const { data: vocabularies = [], isLoading } = useVocabularies();
@@ -84,12 +85,12 @@ export default function Favorites() {
     if (window.innerWidth < 1024) {
       navigate(`/chat/${id}`, {
         state: {
-          initialPrompt: `The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`
+          initialPrompt: aiPrompts.improveMeaning(vocab)
         }
       });
     } else {
       setChatVocab(vocab);
-      setChatInitialPrompt(`The current Bangla meaning "${vocab.bangla}" is confusing. Please provide a better, easier, native-style Bangla meaning.`);
+      setChatInitialPrompt(aiPrompts.improveMeaning(vocab));
       setIsChatOpen(true);
     }
   };

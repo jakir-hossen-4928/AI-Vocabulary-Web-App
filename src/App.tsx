@@ -39,6 +39,7 @@ const OnlineDictionary = lazy(() => import("./pages/OnlineDictionary"));
 const APIKeySetup = lazy(() => import("./openrouterAi/APIKeySetup"));
 const Flashcards = lazy(() => import("./pages/Flashcards"));
 const DownloadPage = lazy(() => import("./pages/DownloadPage"));
+const MeetDeveloper = lazy(() => import("./pages/MeetDeveloper"));
 
 
 const queryClient = new QueryClient();
@@ -86,6 +87,7 @@ const AppRoutes = () => {
           <Route path="/dictionary" element={<ProtectedRoute><OnlineDictionary /></ProtectedRoute>} />
           <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />
           <Route path="/api-key-setup" element={<ProtectedRoute><APIKeySetup /></ProtectedRoute>} />
+          <Route path="/surprise" element={<ProtectedRoute><MeetDeveloper /></ProtectedRoute>} />
 
           {/* Redirects from old grammar routes to new resources routes */}
           <Route path="/grammar" element={<Navigate to="/resources" replace />} />
@@ -113,20 +115,26 @@ const AppRoutes = () => {
 
 
 
+import { ShareProvider } from "@/contexts/ShareContext";
+import { GlobalShareProxy } from "@/components/GlobalShareProxy";
+
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <FavoritesProvider>
-          <Toaster />
-          <Sonner />
-          <NetworkStatus />
-          <BrowserRouter>
-            <AuthProvider>
-              <AppContent />
-            </AuthProvider>
-          </BrowserRouter>
-        </FavoritesProvider>
+        <ShareProvider>
+          <GlobalShareProxy />
+          <FavoritesProvider>
+            <Toaster />
+            <Sonner />
+            <NetworkStatus />
+            <BrowserRouter>
+              <AuthProvider>
+                <AppContent />
+              </AuthProvider>
+            </BrowserRouter>
+          </FavoritesProvider>
+        </ShareProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
@@ -139,6 +147,7 @@ const AppContent = () => {
   useEffect(() => {
     // Start background synchronization
     syncService.startSyncManager();
+    return () => syncService.stopSyncManager();
   }, []);
 
   return <AppRoutes />;

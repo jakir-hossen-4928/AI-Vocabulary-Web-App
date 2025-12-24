@@ -331,24 +331,7 @@ export const VocabCard = memo(({
         </div>
       </Card>
 
-      {/* Hidden view for sharing as image */}
-      {itemToShare && (
-        <div
-          style={{
-            position: 'fixed',
-            left: '0',
-            top: '0',
-            width: '450px',
-            opacity: '0',
-            pointerEvents: 'none',
-            zIndex: -1,
-            overflow: 'hidden',
-            backgroundColor: 'white' // Ensure background is solid for capture
-          }}
-        >
-          <ShareableVocabularyCard ref={shareRef} item={itemToShare} />
-        </div>
-      )}
+      {/* Hidden view for sharing as image - MOVED: Now handled globally by GlobalShareProxy */}
     </div>
   );
 });

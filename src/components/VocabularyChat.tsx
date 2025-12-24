@@ -17,6 +17,7 @@ import { Conversation, ConversationMessage } from "@/components/ai/conversation"
 import { PromptInput } from "@/components/ai/prompt-input"
 import { Suggestions } from "@/components/ai/suggestion"
 import { chatWithVocabulary } from "@/services/openRouterService"
+import { aiPrompts } from "@/services/aiPromptService"
 
 interface VocabularyChatProps {
     vocabulary: Vocabulary
@@ -32,13 +33,7 @@ export function VocabularyChat({ vocabulary, onClose, initialPrompt, isPageMode 
     const [messages, setMessages] = useState<ConversationMessage[]>([])
     const [isLoading, setIsLoading] = useState(false)
 
-    // Suggestion prompts for quick access
-    const suggestions = messages.length === 0 ? [
-        "Give me 3 example sentences",
-        "What are some synonyms?",
-        "Explain the meaning in simple terms",
-        "How to use in IELTS writing?"
-    ] : []
+    const suggestions = messages.length === 0 ? aiPrompts.chatSuggestions : []
 
     // Check mobile device
     useEffect(() => {
@@ -162,7 +157,7 @@ export function VocabularyChat({ vocabulary, onClose, initialPrompt, isPageMode 
 
     const serviceInfo = hasOpenRouterApiKey() ? "🤖 OpenRouter" : "⚠️ No AI service"
 
-    const welcomeMessage = `Hello! Ask me anything about **"${vocabulary.english}"**. I can help with meanings, examples, synonyms, and usage.\n\n*Powered by ${serviceInfo}*`
+    const welcomeMessage = aiPrompts.welcomeMessage(vocabulary.english, serviceInfo)
 
     return (
         <div className={cn(
@@ -213,10 +208,10 @@ export function VocabularyChat({ vocabulary, onClose, initialPrompt, isPageMode 
                 <div className="flex-1 p-6 flex flex-col justify-center overflow-y-auto">
                     <div className="text-center mb-6">
                         <h3 className="font-semibold mb-2 text-lg">
-                            {"AI Service Required"}
+                            {aiPrompts.aiServiceRequired}
                         </h3>
                         <p className="text-muted-foreground text-sm">
-                            {"Please configure OpenRouter to start chatting."}
+                            {aiPrompts.configureOpenRouter}
                         </p>
                     </div>
 
@@ -252,7 +247,7 @@ export function VocabularyChat({ vocabulary, onClose, initialPrompt, isPageMode 
                     <PromptInput
                         onSubmit={handleSendMessage}
                         isLoading={isLoading}
-                        placeholder="Ask about this word..."
+                        placeholder={aiPrompts.chatPlaceholder}
                         disabled={needsApiKey}
                     />
                 </>
