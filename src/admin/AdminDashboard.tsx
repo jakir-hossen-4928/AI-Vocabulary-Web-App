@@ -1,10 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useVocabularies } from "@/hooks/useVocabularies";
 import { useResourcesSimple } from "@/hooks/useResources";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { collection, getDocs, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import {
     BarChart,
     Bar,
@@ -17,7 +20,14 @@ import {
     Pie,
     Cell,
     AreaChart,
-    Area
+    Area,
+    LineChart,
+    Line,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    Radar
 } from "recharts";
 import {
     BookOpen,
@@ -30,11 +40,22 @@ import {
     CheckCircle2,
     RefreshCw,
     Users,
+    User,
     ImageIcon,
     Clock,
-    Database
+    Database,
+    Search,
+    Heart,
+    Zap,
+    TrendingUp,
+    Target,
+    Award,
+    Sparkles,
+    BarChart3,
+    PieChart as PieChartIcon,
+    FileDown
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     format,
     subDays,
@@ -48,16 +69,107 @@ import {
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import partOfSpeechData from "@/data/partOfSpeech.json";
+import { toast } from "sonner";
 
 import { safeDate } from "@/utils/dateUtils";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1', '#a4de6c', '#d0ed57'];
+
+// Helper Components
+function StatCard({ title, value, icon: Icon, trend, trendUp, subtext, color, bgColor }: any) {
+    return (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className={cn("hover:shadow-lg transition-all duration-300 border-l-4 overflow-hidden", bgColor)} style={{ borderLeftColor: 'currentColor' }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+                    <Icon className={cn("h-4 w-4", color)} />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{value}</div>
+                    {(trend || subtext) && (
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            {trend && <span className={trendUp ? "text-green-500 font-medium" : ""}>{trend}</span>}
+                            {subtext && <span>{subtext}</span>}
+                        </p>
+                    )}
+                </CardContent>
+            </Card>
+        </motion.div>
+    );
+}
+
+function QualityCard({ title, score, icon: Icon, description, color }: any) {
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-end justify-between mb-2">
+                    <div className="text-2xl font-bold">{score}%</div>
+                    <span className="text-xs text-muted-foreground">Health Score</span>
+                </div>
+                <Progress value={score} className="h-2" />
+                <p className="text-xs text-muted-foreground mt-3">
+                    {description}
+                </p>
+            </CardContent>
+        </Card>
+    );
+}
+
+function QualityMetricCard({ title, score, count, total, icon: Icon, color }: any) {
+    return (
+        <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <div className={cn("p-2 rounded-lg bg-muted", color)}>
+                            <Icon className="h-4 w-4" />
+                        </div>
+                        <span className="font-semibold text-sm">{title}</span>
+                    </div>
+                    <Badge variant={score >= 80 ? "default" : score >= 50 ? "secondary" : "destructive"}>
+                        {score}%
+                    </Badge>
+                </div>
+                <Progress value={score} className="h-2 mb-2" />
+                <p className="text-xs text-muted-foreground">
+                    {count.toLocaleString()} of {total.toLocaleString()} words
+                </p>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function AdminDashboard() {
     const { data: vocabularies = [], isLoading: isLoadingVocabs, refresh, isRefetching } = useVocabularies();
     const { data: resources = [], isLoading: isLoadingResources } = useResourcesSimple();
 
     const [timeRange, setTimeRange] = useState<'week' | 'month'>('week');
+    const [userRoles, setUserRoles] = useState<any[]>([]);
+    const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+
+    // Fetch user roles
+    useEffect(() => {
+        const fetchUserRoles = async () => {
+            try {
+                const q = query(collection(db, "user_roles"));
+                const snapshot = await getDocs(q);
+                const roles = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setUserRoles(roles);
+            } catch (error) {
+                console.error("Error fetching user roles:", error);
+            } finally {
+                setIsLoadingUsers(false);
+            }
+        };
+        fetchUserRoles();
+    }, []);
 
     // Advanced Stats Calculations
     const stats = useMemo(() => {
@@ -68,7 +180,7 @@ export default function AdminDashboard() {
         // Filter valid dates for time-based analytics
         const validVocabs = vocabularies.filter(v => safeDate(v.createdAt) !== null);
 
-        // 1. User Stats
+        // 1. User Stats (Enhanced with Roles)
         const uniqueUsers = new Set(
             vocabularies
                 .map(v => v.userId)
@@ -78,17 +190,76 @@ export default function AdminDashboard() {
         // If 0 unique users detected but we have words, assume at least 1 (admin/current) or just show 0 if purely server side
         const activeUsers = uniqueUsers === 0 && totalWords > 0 ? 1 : uniqueUsers;
 
-        // 2. Data Quality Metrics (Revised)
-        const withExamples = vocabularies.filter(v => v.examples && v.examples.length > 0).length;
-        const withSynonyms = vocabularies.filter(v => v.synonyms && v.synonyms.length > 0).length;
+        // User role statistics
+        const totalUsers = userRoles.length;
+        const adminUsers = userRoles.filter((u: any) => u.role === 'admin').length;
+        const normalUsers = userRoles.filter((u: any) => u.role === 'user').length;
 
+        // 2. Data Quality Metrics (Enhanced)
+        const withExamples = vocabularies.filter(v => v.examples && v.examples.length > 0).length;
+        const withSynonyms = vocabularies.filter(v => v.synonyms && v.synonyms.length >= 3).length;
+        const withAntonyms = vocabularies.filter(v => v.antonyms && v.antonyms.length >= 3).length;
+        const withPronunciation = vocabularies.filter(v => v.pronunciation && v.pronunciation.trim() !== '').length;
+        const withExplanation = vocabularies.filter(v => v.explanation && v.explanation.length >= 50).length;
+        const withRelatedWords = vocabularies.filter(v => v.relatedWords && v.relatedWords.length > 0).length;
+        const verbsWithForms = vocabularies.filter(v => v.partOfSpeech === 'Verb' && v.verbForms).length;
+        const totalVerbs = vocabularies.filter(v => v.partOfSpeech === 'Verb').length;
+
+        // Calculate completeness scores
         const qualityScores = {
             examples: totalWords > 0 ? Math.round((withExamples / totalWords) * 100) : 0,
             synonyms: totalWords > 0 ? Math.round((withSynonyms / totalWords) * 100) : 0,
-            overall: totalWords > 0 ? Math.round(((withExamples + withSynonyms) / (totalWords * 2)) * 100) : 0
+            antonyms: totalWords > 0 ? Math.round((withAntonyms / totalWords) * 100) : 0,
+            pronunciation: totalWords > 0 ? Math.round((withPronunciation / totalWords) * 100) : 0,
+            explanation: totalWords > 0 ? Math.round((withExplanation / totalWords) * 100) : 0,
+            relatedWords: totalWords > 0 ? Math.round((withRelatedWords / totalWords) * 100) : 0,
+            verbForms: totalVerbs > 0 ? Math.round((verbsWithForms / totalVerbs) * 100) : 0,
+            overall: totalWords > 0 ? Math.round(
+                ((withExamples + withSynonyms + withAntonyms + withPronunciation + withExplanation + withRelatedWords) / (totalWords * 6)) * 100
+            ) : 0
         };
 
-        // 3. Contributions / Heatmap Data (Last 365 days)
+        // Field completeness for radar chart
+        const fieldCompleteness = [
+            { field: 'Examples', score: qualityScores.examples },
+            { field: 'Synonyms', score: qualityScores.synonyms },
+            { field: 'Antonyms', score: qualityScores.antonyms },
+            { field: 'Pronunciation', score: qualityScores.pronunciation },
+            { field: 'Explanation', score: qualityScores.explanation },
+            { field: 'Related Words', score: qualityScores.relatedWords }
+        ];
+
+        // 3. Content Velocity (words per day over last 30 days)
+        const last30Days = subDays(now, 30);
+        const wordsLast30Days = validVocabs.filter(v => {
+            const d = safeDate(v.createdAt);
+            return d && d >= last30Days;
+        }).length;
+        const avgWordsPerDay = Math.round((wordsLast30Days / 30) * 10) / 10;
+
+        const resourcesLast30Days = resources.filter((r: any) => {
+            const d = safeDate(r.createdAt);
+            return d && d >= last30Days;
+        }).length;
+        const avgResourcesPerWeek = Math.round((resourcesLast30Days / 4.3) * 10) / 10;
+
+        // 4. Top Vocabulary by Completeness
+        const topQualityWords = vocabularies
+            .map(v => {
+                let score = 0;
+                if (v.examples && v.examples.length > 0) score++;
+                if (v.synonyms && v.synonyms.length >= 3) score++;
+                if (v.antonyms && v.antonyms.length >= 3) score++;
+                if (v.pronunciation && v.pronunciation.trim() !== '') score++;
+                if (v.explanation && v.explanation.length >= 50) score++;
+                if (v.relatedWords && v.relatedWords.length > 0) score++;
+                if (v.partOfSpeech === 'Verb' && v.verbForms) score++;
+                return { ...v, qualityScore: score };
+            })
+            .sort((a, b) => b.qualityScore - a.qualityScore)
+            .slice(0, 10);
+
+        // 5. Contributions / Heatmap Data (Last 365 days)
         const yearStart = subDays(now, 364);
         const daysMap = new Map<string, number>();
 
@@ -111,7 +282,7 @@ export default function AdminDashboard() {
             heatmapData.push({ date: day, count, dateStr });
         }
 
-        // 4. Hourly Distribution
+        // 6. Hourly Distribution
         const hourlyDist = new Array(24).fill(0);
         const dayOfWeekDist = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(name => ({ name, count: 0 }));
 
@@ -128,7 +299,7 @@ export default function AdminDashboard() {
             count
         }));
 
-        // 5. POS Distribution
+        // 7. POS Distribution
         const predefinedPOS = partOfSpeechData;
         const posCalc: Record<string, number> = {};
 
@@ -147,14 +318,13 @@ export default function AdminDashboard() {
             }
         });
 
-        // Filter out categories with 0 count to keep chart clean?
-        // Or keep them to show gaps in data? Let's hide 0s for cleaner chart.
+        // Filter out categories with 0 count to keep chart clean
         const pieData = Object.entries(posCalc)
             .filter(([_, value]) => value > 0)
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value);
 
-        // 6. Growth Data
+        // 8. Growth Data
         const growthDays = timeRange === 'week' ? 7 : 30;
         const growthData = [];
         for (let i = growthDays - 1; i >= 0; i--) {
@@ -182,7 +352,7 @@ export default function AdminDashboard() {
             });
         }
 
-        // 7. Recent Items (Mixed Vocab and Resources)
+        // 9. Recent Items (Mixed Vocab and Resources)
         const vocabularyItems = vocabularies.map(v => ({ ...v, type: 'vocabulary' }));
         const resourceItems = resources.map((r: any) => ({ ...r, type: 'resource', english: r.title || 'Untitled Resource', bangla: 'Resource' }));
 
@@ -213,6 +383,9 @@ export default function AdminDashboard() {
             wordsAddedToday,
             resourcesAddedToday,
             activeUsers,
+            totalUsers,
+            adminUsers,
+            normalUsers,
             pieData,
             growthData,
             recentActivity,
@@ -221,11 +394,83 @@ export default function AdminDashboard() {
             maxCount,
             hourlyData,
             dayOfWeekDist,
-            counts: { withExamples, withSynonyms }
+            fieldCompleteness,
+            avgWordsPerDay,
+            avgResourcesPerWeek,
+            topQualityWords,
+            counts: {
+                withExamples,
+                withSynonyms,
+                withAntonyms,
+                withPronunciation,
+                withExplanation,
+                withRelatedWords,
+                verbsWithForms,
+                totalVerbs
+            }
         };
-    }, [vocabularies, resources, timeRange]);
+    }, [vocabularies, resources, timeRange, userRoles]);
 
-    const isLoading = isLoadingVocabs || isLoadingResources;
+    const isLoading = isLoadingVocabs || isLoadingResources || isLoadingUsers;
+
+    // Export functionality
+    const handleExport = (exportFormat: 'csv' | 'json') => {
+        const exportData = {
+            generatedAt: new Date().toISOString(),
+            summary: {
+                totalVocabulary: stats.totalWords,
+                totalResources: stats.totalResources,
+                activeUsers: stats.activeUsers,
+                overallQuality: stats.qualityScores.overall,
+                avgWordsPerDay: stats.avgWordsPerDay,
+                avgResourcesPerWeek: stats.avgResourcesPerWeek
+            },
+            qualityMetrics: stats.qualityScores,
+            fieldCompleteness: stats.fieldCompleteness,
+            partOfSpeechDistribution: stats.pieData,
+            topQualityWords: stats.topQualityWords.map((w: any) => ({
+                english: w.english,
+                bangla: w.bangla,
+                partOfSpeech: w.partOfSpeech,
+                qualityScore: w.qualityScore
+            }))
+        };
+
+        const dateStr = format(new Date(), 'yyyy-MM-dd');
+
+        if (exportFormat === 'json') {
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analytics-${dateStr}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success('Analytics exported as JSON');
+        } else if (exportFormat === 'csv') {
+            const csvRows = [
+                ['Metric', 'Value'],
+                ['Total Vocabulary', stats.totalWords],
+                ['Total Resources', stats.totalResources],
+                ['Active Users', stats.activeUsers],
+                ['Overall Quality', `${stats.qualityScores.overall}%`],
+                ['Avg Words/Day', stats.avgWordsPerDay],
+                ['Avg Resources/Week', stats.avgResourcesPerWeek],
+                [''],
+                ['Field Completeness', 'Score'],
+                ...stats.fieldCompleteness.map((f: any) => [f.field, `${f.score}%`])
+            ];
+            const csvContent = csvRows.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analytics-${dateStr}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success('Analytics exported as CSV');
+        }
+    };
 
     if (isLoading) {
         return (
@@ -241,10 +486,11 @@ export default function AdminDashboard() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                     <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                        Analytics
+                        Analytics Dashboard
                     </h1>
-                    <p className="text-muted-foreground mt-1">
-                        System overview and detailed analytics
+                    <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4" />
+                        Comprehensive system insights and performance metrics
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -258,24 +504,45 @@ export default function AdminDashboard() {
                         <RefreshCw className={cn("mr-2 h-4 w-4", isRefetching ? "animate-spin" : "")} />
                         {isRefetching ? "Syncing..." : "Sync Data"}
                     </Button>
-                    <Button variant="default" size="sm">
-                        <Download className="mr-2 h-4 w-4" />
-                        Export Report
-                    </Button>
+                    <div className="relative group">
+                        <Button variant="default" size="sm" className="gap-2">
+                            <FileDown className="h-4 w-4" />
+                            Export
+                        </Button>
+                        <div className="absolute right-0 mt-2 w-40 bg-popover border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                            <div className="p-1">
+                                <button
+                                    onClick={() => handleExport('csv')}
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors flex items-center gap-2"
+                                >
+                                    <FileText className="h-3 w-3" />
+                                    Export as CSV
+                                </button>
+                                <button
+                                    onClick={() => handleExport('json')}
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors flex items-center gap-2"
+                                >
+                                    <Database className="h-3 w-3" />
+                                    Export as JSON
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <Tabs defaultValue="overview" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+                <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                    <TabsTrigger value="content">Content Health</TabsTrigger>
+                    <TabsTrigger value="insights">Insights</TabsTrigger>
+                    <TabsTrigger value="content">Quality</TabsTrigger>
                 </TabsList>
 
                 {/* OVERVIEW TAB */}
                 <TabsContent value="overview" className="space-y-6">
                     {/* Hero Stats */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <StatCard
                             title="Total Vocabulary"
                             value={stats?.totalWords.toLocaleString() || '0'}
@@ -283,6 +550,7 @@ export default function AdminDashboard() {
                             trend={`+${stats?.wordsAddedToday || 0} today`}
                             trendUp={true}
                             color="text-blue-500"
+                            bgColor="bg-blue-50 dark:bg-blue-950/20"
                         />
                         <StatCard
                             title="Total Resources"
@@ -290,22 +558,76 @@ export default function AdminDashboard() {
                             icon={ImageIcon}
                             trend={`+${stats?.resourcesAddedToday || 0} today`}
                             color="text-purple-500"
+                            bgColor="bg-purple-50 dark:bg-purple-950/20"
                         />
                         <StatCard
-                            title="Active Users"
+                            title="Active Contributors"
                             value={stats?.activeUsers.toString() || '0'}
                             icon={Users}
-                            subtext="Contributors"
+                            subtext="Unique users"
                             color="text-green-500"
+                            bgColor="bg-green-50 dark:bg-green-950/20"
+                        />
+                        <StatCard
+                            title="Content Velocity"
+                            value={`${stats?.avgWordsPerDay || 0}/day`}
+                            icon={Zap}
+                            subtext={`${stats?.avgResourcesPerWeek || 0} res/week`}
+                            color="text-orange-500"
+                            bgColor="bg-orange-50 dark:bg-orange-950/20"
+                        />
+                        <StatCard
+                            title="Data Quality"
+                            value={`${stats?.qualityScores.overall}%`}
+                            icon={Award}
+                            subtext="Overall completeness"
+                            color="text-pink-500"
+                            bgColor="bg-pink-50 dark:bg-pink-950/20"
                         />
                         <StatCard
                             title="System Health"
-                            value={`${stats?.qualityScores.overall}%`}
-                            icon={Database}
-                            subtext="Data Quality"
-                            color="text-orange-500"
+                            value="Excellent"
+                            icon={Activity}
+                            subtext={`${stats?.totalWords + stats?.totalResources} items`}
+                            color="text-teal-500"
+                            bgColor="bg-teal-50 dark:bg-teal-950/20"
                         />
                     </div>
+                    {/* User Role Statistics */}
+                    <Card className="border-2 border-primary/20">
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <Users className="h-5 w-5 text-primary" />
+                                User Statistics
+                            </CardTitle>
+                            <CardDescription>Registered users and role distribution</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800">
+                                    <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats?.totalUsers || 0}</p>
+                                    </div>
+                                    <Users className="h-10 w-10 text-blue-500 opacity-50" />
+                                </div>
+                                <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 border border-purple-200 dark:border-purple-800">
+                                    <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Admin Users</p>
+                                        <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats?.adminUsers || 0}</p>
+                                    </div>
+                                    <Award className="h-10 w-10 text-purple-500 opacity-50" />
+                                </div>
+                                <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 border border-green-200 dark:border-green-800">
+                                    <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Normal Users</p>
+                                        <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats?.normalUsers || 0}</p>
+                                    </div>
+                                    <User className="h-10 w-10 text-green-500 opacity-50" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     <div className="grid gap-6 md:grid-cols-7">
                         {/* Quick Growth Chart */}
@@ -387,6 +709,8 @@ export default function AdminDashboard() {
                             </CardContent>
                         </Card>
                     </div>
+
+
                 </TabsContent>
 
                 {/* ANALYTICS TAB */}
@@ -514,6 +838,158 @@ export default function AdminDashboard() {
                     </Card>
                 </TabsContent>
 
+                {/* INSIGHTS TAB */}
+                <TabsContent value="insights" className="space-y-6">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {/* Field Completeness Radar */}
+                        <Card className="md:col-span-1">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Target className="h-5 w-5 text-primary" />
+                                    Field Completeness Analysis
+                                </CardTitle>
+                                <CardDescription>Data quality across all vocabulary fields</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-[300px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <RadarChart data={stats?.fieldCompleteness}>
+                                            <PolarGrid stroke="hsl(var(--border))" />
+                                            <PolarAngleAxis dataKey="field" fontSize={11} />
+                                            <PolarRadiusAxis angle={90} domain={[0, 100]} fontSize={10} />
+                                            <Radar name="Completeness" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} />
+                                            <Tooltip />
+                                        </RadarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Top Quality Words */}
+                        <Card className="md:col-span-1">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Sparkles className="h-5 w-5 text-yellow-500" />
+                                    Top Quality Vocabulary
+                                </CardTitle>
+                                <CardDescription>Most complete vocabulary entries</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                                    {stats?.topQualityWords.slice(0, 8).map((word: any, i: number) => (
+                                        <motion.div
+                                            key={word.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: i * 0.05 }}
+                                            className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 text-white font-bold text-sm">
+                                                    {i + 1}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-sm">{word.english}</p>
+                                                    <p className="text-xs text-muted-foreground">{word.bangla}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="secondary" className="text-xs">{word.partOfSpeech}</Badge>
+                                                <div className="flex items-center gap-1">
+                                                    <Award className="h-3 w-3 text-yellow-500" />
+                                                    <span className="text-xs font-bold">{word.qualityScore}/7</span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Detailed Quality Metrics */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <PieChartIcon className="h-5 w-5" />
+                                Detailed Quality Breakdown
+                            </CardTitle>
+                            <CardDescription>Field-by-field completeness statistics</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                <QualityMetricCard
+                                    title="Examples"
+                                    score={stats?.qualityScores.examples || 0}
+                                    count={stats?.counts.withExamples || 0}
+                                    total={stats?.totalWords || 0}
+                                    icon={FileText}
+                                    color="text-blue-500"
+                                />
+                                <QualityMetricCard
+                                    title="Synonyms"
+                                    score={stats?.qualityScores.synonyms || 0}
+                                    count={stats?.counts.withSynonyms || 0}
+                                    total={stats?.totalWords || 0}
+                                    icon={Type}
+                                    color="text-green-500"
+                                />
+                                <QualityMetricCard
+                                    title="Antonyms"
+                                    score={stats?.qualityScores.antonyms || 0}
+                                    count={stats?.counts.withAntonyms || 0}
+                                    total={stats?.totalWords || 0}
+                                    icon={Type}
+                                    color="text-red-500"
+                                />
+                                <QualityMetricCard
+                                    title="Pronunciation"
+                                    score={stats?.qualityScores.pronunciation || 0}
+                                    count={stats?.counts.withPronunciation || 0}
+                                    total={stats?.totalWords || 0}
+                                    icon={Activity}
+                                    color="text-purple-500"
+                                />
+                                <QualityMetricCard
+                                    title="Explanation"
+                                    score={stats?.qualityScores.explanation || 0}
+                                    count={stats?.counts.withExplanation || 0}
+                                    total={stats?.totalWords || 0}
+                                    icon={BookOpen}
+                                    color="text-orange-500"
+                                />
+                                <QualityMetricCard
+                                    title="Related Words"
+                                    score={stats?.qualityScores.relatedWords || 0}
+                                    count={stats?.counts.withRelatedWords || 0}
+                                    total={stats?.totalWords || 0}
+                                    icon={TrendingUp}
+                                    color="text-teal-500"
+                                />
+                            </div>
+                            {stats?.counts.totalVerbs > 0 && (
+                                <div className="mt-4 p-4 rounded-lg border bg-muted/30">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Activity className="h-4 w-4 text-indigo-500" />
+                                            <span className="font-semibold text-sm">Verb Forms</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-sm text-muted-foreground">
+                                                {stats?.counts.verbsWithForms} / {stats?.counts.totalVerbs} verbs
+                                            </span>
+                                            <Badge variant={stats?.qualityScores.verbForms >= 80 ? "default" : "secondary"}>
+                                                {stats?.qualityScores.verbForms}%
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <Progress value={stats?.qualityScores.verbForms} className="h-2 mt-2" />
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 {/* CONTENT HEALTH TAB (Renamed from Quality) */}
                 <TabsContent value="content" className="space-y-6">
                     <div className="grid gap-6 md:grid-cols-2">
@@ -561,49 +1037,5 @@ export default function AdminDashboard() {
                 </TabsContent>
             </Tabs>
         </div>
-    );
-}
-
-// Sub-components for cleaner code
-function StatCard({ title, value, icon: Icon, trend, trendUp, subtext, color }: any) {
-    return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="hover:shadow-lg transition-all duration-300 border-l-4" style={{ borderLeftColor: 'currentColor' }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-                    <Icon className={cn("h-4 w-4", color)} />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{value}</div>
-                    {(trend || subtext) && (
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                            {trend && <span className={trendUp ? "text-green-500 font-medium" : ""}>{trend}</span>}
-                            {subtext && <span>{subtext}</span>}
-                        </p>
-                    )}
-                </CardContent>
-            </Card>
-        </motion.div>
-    );
-}
-
-function QualityCard({ title, score, icon: Icon, description, color }: any) {
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{title}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-end justify-between mb-2">
-                    <div className="text-2xl font-bold">{score}%</div>
-                    <span className="text-xs text-muted-foreground">Health Score</span>
-                </div>
-                <Progress value={score} className="h-2" />
-                <p className="text-xs text-muted-foreground mt-3">
-                    {description}
-                </p>
-            </CardContent>
-        </Card>
     );
 }

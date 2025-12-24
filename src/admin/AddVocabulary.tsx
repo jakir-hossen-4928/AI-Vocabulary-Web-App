@@ -16,9 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Plus, Trash2, Wand2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2, Wand2, AlertTriangle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { generateVocabularyFromWord } from "@/services/openaiService";
+import { generateVocabularyFromWord, generateBanglaMeaning } from "@/services/openaiService";
 import { useVocabularyMutations, useVocabularies } from "@/hooks/useVocabularies";
 import { motion } from "framer-motion";
 import PARTS_OF_SPEECH from "@/data/partOfSpeech.json";
@@ -43,6 +43,7 @@ export default function AddVocabulary() {
 
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingBangla, setGeneratingBangla] = useState(false);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [duplicateCheckResult, setDuplicateCheckResult] = useState<{
     isDuplicate: boolean;
@@ -126,6 +127,25 @@ export default function AddVocabulary() {
       toast.error("Failed to generate details");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateBangla = async () => {
+    if (!formData.english) {
+      toast.error("Please enter an English word first");
+      return;
+    }
+
+    try {
+      setGeneratingBangla(true);
+      const banglaMeaning = await generateBanglaMeaning(formData.english);
+      setFormData({ ...formData, bangla: banglaMeaning });
+      toast.success("✨ Bangla meaning generated!");
+    } catch (error) {
+      console.error("Error generating Bangla meaning:", error);
+      toast.error("Failed to generate Bangla meaning");
+    } finally {
+      setGeneratingBangla(false);
     }
   };
 
@@ -277,16 +297,70 @@ export default function AddVocabulary() {
                 <Label htmlFor="bangla" className="text-base md:text-sm font-medium">
                   Bangla Meaning
                 </Label>
-                <Input
-                  id="bangla"
-                  value={formData.bangla}
-                  onChange={(e) =>
-                    setFormData({ ...formData, bangla: e.target.value })
-                  }
-                  placeholder="e.g. আকস্মিক প্রাপ্তি"
-                  required
-                  className="h-12 md:h-10 text-base md:text-sm"
-                />
+                <div className="flex gap-2">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1"
+                  >
+                    <Input
+                      id="bangla"
+                      value={formData.bangla}
+                      onChange={(e) =>
+                        setFormData({ ...formData, bangla: e.target.value })
+                      }
+                      placeholder="e.g. আকস্মিক প্রাপ্তি"
+                      required
+                      className="h-12 md:h-10 text-base md:text-sm w-full"
+                    />
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={generatingBangla ? {
+                      scale: [1, 1.05, 1],
+                      rotate: [0, 5, -5, 0]
+                    } : {}}
+                    transition={{
+                      scale: { repeat: generatingBangla ? Infinity : 0, duration: 1.5 },
+                      rotate: { repeat: generatingBangla ? Infinity : 0, duration: 2 }
+                    }}
+                  >
+                    <Button
+                      type="button"
+                      size="icon"
+                      onClick={handleGenerateBangla}
+                      disabled={generatingBangla || !formData.english}
+                      className={`
+                        h-12 md:h-10 w-12 md:w-10 shrink-0 border-0
+                        bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500
+                        hover:from-purple-600 hover:via-violet-600 hover:to-indigo-600
+                        shadow-lg hover:shadow-xl hover:shadow-purple-500/50
+                        transition-all duration-300 ease-out
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        ${generatingBangla ? 'animate-pulse shadow-purple-500/70' : ''}
+                      `}
+                      title="AI Auto-complete Bangla meaning"
+                    >
+                      {generatingBangla ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                        >
+                          <Loader2 className="h-5 w-5 md:h-4 md:w-4 text-white" />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          animate={{ rotate: [0, 10, -10, 0] }}
+                          transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                        >
+                          <Sparkles className="h-5 w-5 md:h-4 md:w-4 text-white" />
+                        </motion.div>
+                      )}
+                    </Button>
+                  </motion.div>
+                </div>
               </div>
 
               {/* English Word Input */}

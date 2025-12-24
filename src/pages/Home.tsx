@@ -11,12 +11,10 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { VocabCard } from "@/components/VocabCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/useDebounce";
-import { WordChatModal } from "@/components/WordChatModal";
 import { VocabularyDetailsModal } from "@/components/VocabularyDetailsModal";
 import { Vocabulary } from "@/types/vocabulary";
 import { searchDictionaryAPI, convertDictionaryToVocabulary } from "@/services/dictionaryApiService";
 import { toast } from "sonner";
-import { getSelectedModel } from "@/openrouterAi/apiKeyStorage";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { safeTimestamp } from "@/utils/dateUtils";
 import { vocabularyService } from "@/services/vocabularyService";
@@ -37,10 +35,7 @@ export default function Home() {
   const { favorites, toggleFavorite } = useFavorites();
 
 
-  // Chat State
-  const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
+
 
   // Modal State
   const [selectedVocab, setSelectedVocab] = useState<Vocabulary | null>(null);
@@ -64,23 +59,19 @@ export default function Home() {
       }
     };
 
-    const handleStorage = () => {
-      setModel(getSelectedModel() || null);
-    };
+
 
     handleUIUpdates();
     window.addEventListener('resize', handleUIUpdates);
-    window.addEventListener('storage', handleStorage);
 
     return () => {
       window.removeEventListener('resize', handleUIUpdates);
-      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
-  const [model, setModel] = useState<string | null>(getSelectedModel() || null);
+
 
   // Voice search
   const { isListening, startListening, interimTranscript, detectedLanguage, language, toggleLanguage } = useVoiceSearch((transcript) => {
@@ -131,23 +122,7 @@ export default function Home() {
     });
   }, [data]);
 
-  const handleImproveMeaning = async (id: string) => {
-    const vocab = vocabularies.find(v => v.id === id);
-    if (!vocab) return;
 
-    if (window.innerWidth < 1024) {
-      navigate(`/chat/${id}`, {
-        state: {
-          initialPrompt: aiPrompts.improveMeaning(vocab)
-        }
-      });
-      return;
-    }
-
-    setChatVocab(vocab);
-    setChatInitialPrompt(aiPrompts.improveMeaning(vocab));
-    setIsChatOpen(true);
-  };
 
 
 
@@ -389,7 +364,7 @@ export default function Home() {
                           }
                         }
                       }}
-                      onImproveMeaning={vocab.isOnline ? undefined : handleImproveMeaning}
+
                       className="h-full"
                     />
                   ))}
@@ -457,14 +432,6 @@ export default function Home() {
           </motion.section >
         )}
       </div>
-
-      <WordChatModal
-        vocabulary={chatVocab}
-        open={isChatOpen}
-        onOpenChange={setIsChatOpen}
-        initialPrompt={chatInitialPrompt}
-        model={model}
-      />
 
       <VocabularyDetailsModal
         vocabulary={selectedVocab}

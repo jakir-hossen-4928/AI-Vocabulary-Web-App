@@ -4,18 +4,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { VocabCard } from "@/components/VocabCard";
 import { useVocabularies, useVocabularyMutations } from "@/hooks/useVocabularies";
 import { useFavorites } from "@/hooks/useFavorites";
-import { WordChatModal } from "@/components/WordChatModal";
 import { Vocabulary } from "@/types/vocabulary";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
+import { WindowScroller, AutoSizer, List, CellMeasurer, CellMeasurerCache } from "react-virtualized";
+import { Loader2, Download, Search, X, Heart } from "lucide-react";
+import { VocabularyDetailsModal } from "@/components/VocabularyDetailsModal";
 import { generateFavoritesPDF } from "@/lib/pdf/generateFavoritesPdf";
 import { motion } from "framer-motion";
-import { List, AutoSizer, WindowScroller, CellMeasurer, CellMeasurerCache } from "react-virtualized";
-import { VocabularyDetailsModal } from "@/components/VocabularyDetailsModal";
-import { Search, X, Loader2, Heart, Download } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/useDebounce";
-import { aiPrompts } from "@/services/aiPromptService";
 
 export default function Favorites() {
   const { data: vocabularies = [], isLoading } = useVocabularies();
@@ -31,10 +29,7 @@ export default function Favorites() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  // Chat State
-  const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
+
 
   // Modal State
   const [selectedVocab, setSelectedVocab] = useState<Vocabulary | null>(null);
@@ -78,22 +73,7 @@ export default function Favorites() {
     setSearchParams(params, { replace: true });
   }, [debouncedSearch, setSearchParams]);
 
-  const handleImproveMeaning = async (id: string) => {
-    const vocab = vocabularies.find(v => v.id === id);
-    if (!vocab) return;
 
-    if (window.innerWidth < 1024) {
-      navigate(`/chat/${id}`, {
-        state: {
-          initialPrompt: aiPrompts.improveMeaning(vocab)
-        }
-      });
-    } else {
-      setChatVocab(vocab);
-      setChatInitialPrompt(aiPrompts.improveMeaning(vocab));
-      setIsChatOpen(true);
-    }
-  };
 
   const handleExport = async () => {
     if (favoriteVocabs.length === 0) {
@@ -309,7 +289,7 @@ export default function Favorites() {
                                             setIsDetailsModalOpen(true);
                                           }
                                         }}
-                                        onImproveMeaning={handleImproveMeaning}
+
                                         className="h-full"
                                       />
                                     </div>
@@ -328,13 +308,6 @@ export default function Favorites() {
           </div>
         )}
       </div>
-
-      <WordChatModal
-        vocabulary={chatVocab}
-        open={isChatOpen}
-        onOpenChange={setIsChatOpen}
-        initialPrompt={chatInitialPrompt}
-      />
 
       <VocabularyDetailsModal
         vocabulary={selectedVocab}

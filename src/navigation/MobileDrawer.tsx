@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield, Layers, Upload, Heart, Plus, Wand2, LayoutDashboard, Settings, Search, Download, Gift } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, LogOut, Users, Shield, Layers, Upload, Heart, Plus, Wand2, LayoutDashboard, Settings, Search, Download, Gift, Printer } from "lucide-react";
 import { NavLink } from "@/navigation/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "firebase/auth";
@@ -21,6 +21,7 @@ const mainNavItems = [
     { path: "/flashcards", icon: Layers, label: "Flashcards" },
     { path: "/favorites", icon: Heart, label: "Favorites" },
     { path: "/resources", icon: GraduationCap, label: "Resources" },
+    { path: "/print", icon: Printer, label: "Print Vocabulary" },
     { path: "/surprise", icon: Gift, label: "Special Gift 🎁❤️" },
     { path: "/profile", icon: User, label: "Profile" },
     { path: "/download", icon: Download, label: "Download App" },
@@ -199,8 +200,7 @@ export const MobileDrawer = ({ open, onOpenChange }: MobileDrawerProps) => {
                             </>
                         )}
 
-                        <SectionHeader title="Settings" />
-                        <NavItem item={{ path: "/api-key-setup", icon: Shield, label: "AI API Configuration" }} />
+
                     </div>
                 </ScrollArea>
 

@@ -32,16 +32,13 @@ import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Vocabulary } from "@/types/vocabulary";
-import { WordChatModal } from "@/components/WordChatModal";
 import { VocabularyDetailsModal } from "@/components/VocabularyDetailsModal";
 import { ViewPreferenceDialog } from "@/components/ViewPreferenceDialog";
 import { toast } from "sonner";
-import { getSelectedModel } from "@/openrouterAi/apiKeyStorage";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { useViewPreference } from "@/hooks/useViewPreference";
 import { vocabularyService } from "@/services/vocabularyService";
 import { List, AutoSizer, WindowScroller, CellMeasurer, CellMeasurerCache } from "react-virtualized";
-import { aiPrompts } from "@/services/aiPromptService";
 
 export default function Vocabularies() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,14 +65,9 @@ export default function Vocabularies() {
   const workerRef = useRef<Worker | null>(null);
 
 
-  // Chat State
-  const [chatVocab, setChatVocab] = useState<Vocabulary | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>(undefined);
   // Modal & Search State
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [model, setModel] = useState<string | null>(getSelectedModel() || null);
 
   // View Preference State
   const { preference, savePreference, clearPreference } = useViewPreference();
@@ -233,23 +225,6 @@ export default function Vocabularies() {
     }
   }, [deleteVocabulary]);
 
-  const handleImproveMeaning = useCallback(async (id: string) => {
-    const vocab = filteredVocabs.find(v => v.id === id); // Use filteredVocabs to avoid extra closure
-    if (!vocab) return;
-
-    if (window.innerWidth < 1024) {
-      navigate(`/chat/${id}`, {
-        state: {
-          initialPrompt: aiPrompts.improveMeaning(vocab)
-        }
-      });
-    } else {
-      setChatVocab(vocab);
-      setChatInitialPrompt(aiPrompts.improveMeaning(vocab));
-      setIsChatOpen(true);
-    }
-  }, [filteredVocabs, navigate]);
-
   const handleRefresh = async () => {
     try {
       await refresh();
@@ -258,17 +233,6 @@ export default function Vocabularies() {
       toast.error("Failed to refresh vocabularies");
     }
   };
-
-  // Keep model in sync with stored selection
-  useEffect(() => {
-    const storedModel = getSelectedModel();
-    setModel(storedModel || null);
-    const handler = () => {
-      setModel(getSelectedModel() || null);
-    };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, []);
 
   // Close details modal on mobile/tablet resize
   useEffect(() => {
@@ -368,7 +332,6 @@ export default function Vocabularies() {
                     searchQuery={debouncedSearch}
                     onClick={() => handleVocabClick(item)}
                     onDelete={handleDelete}
-                    onImproveMeaning={handleImproveMeaning}
                     isAdmin={isAdmin}
                     className="h-full"
                   />
@@ -379,7 +342,7 @@ export default function Vocabularies() {
         )}
       </CellMeasurer>
     );
-  }, [columns, filteredVocabs, favorites, toggleFavorite, searchQuery, handleVocabClick, handleDelete, handleImproveMeaning, isAdmin]);
+  }, [columns, filteredVocabs, favorites, toggleFavorite, searchQuery, handleVocabClick, handleDelete, isAdmin]);
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
@@ -486,7 +449,6 @@ export default function Vocabularies() {
                   size="icon"
                   onClick={(e) => {
                     setSearchQuery("");
-                    setOnlineResults([]);
                     (e.currentTarget.closest('.relative')?.querySelector('input') as HTMLInputElement)?.blur();
                   }}
                   className={`h - 7 w - 7 sm: h - 8 sm: w - 8 rounded - full hover: bg - slate - 100 transition - opacity text - foreground ${searchQuery ? 'opacity-100' : 'opacity-0 pointer-events-none'} `}
@@ -796,13 +758,6 @@ export default function Vocabularies() {
         )
         }
       </div>
-      <WordChatModal
-        vocabulary={chatVocab}
-        open={isChatOpen}
-        onOpenChange={setIsChatOpen}
-        initialPrompt={chatInitialPrompt}
-        model={model}
-      />
 
       <ViewPreferenceDialog
         open={showPreferenceDialog}

@@ -234,5 +234,61 @@ Starts with { and ends with }
         throw new Error("Bangla meaning was not generated");
     }
 
+
     return parsed;
+};
+
+export const generateBanglaMeaning = async (englishWord: string, apiKey?: string, modelId?: string): Promise<string> => {
+    const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+    const keyToUse = apiKey || OPENAI_API_KEY;
+
+    if (!keyToUse) {
+        throw new Error("OpenAI API key is required (VITE_OPENAI_API_KEY)");
+    }
+
+    // Use proxy in development to avoid CORS, direct URL in production
+    const isDev = import.meta.env.DEV;
+    const baseUrl = isDev ? "/api/openai" : "https://api.openai.com/v1";
+
+    // Safety: Ensure baseUrl is not pointing to a 3rd party proxy (n8n)
+    if (/n8n|automationlearners/i.test(baseUrl)) {
+        throw new Error("Invalid dev proxy configuration: n8n/third-party proxy is not allowed. Please remove any n8n proxy and use the standard OpenAI endpoint.");
+    }
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${keyToUse}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "model": modelId || "gpt-4o-mini",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "Translate English words to Bangla (Bangladeshi Bengali). Return only the Bangla translation, no explanations."
+                },
+                {
+                    "role": "user",
+                    "content": englishWord
+                }
+            ],
+            "temperature": 0.3,
+            "max_tokens": 50
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `OpenAI API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const banglaMeaning = result.choices[0].message.content.trim();
+
+    if (!banglaMeaning) {
+        throw new Error("Failed to generate Bangla meaning");
+    }
+
+    return banglaMeaning;
 };

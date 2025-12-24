@@ -33,10 +33,9 @@ const DuplicateManager = lazy(() => import("./admin/DuplicateManager"));
 const AdminDashboard = lazy(() => import("./admin/AdminDashboard"));
 
 const AdminResourceGallery = lazy(() => import("./admin/ResourceGallery"));
+const PrintVocabulary = lazy(() => import("./pages/PrintVocabulary"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const WordChatPage = lazy(() => import("./pages/WordChatPage"));
 const OnlineDictionary = lazy(() => import("./pages/OnlineDictionary"));
-const APIKeySetup = lazy(() => import("./openrouterAi/APIKeySetup"));
 const Flashcards = lazy(() => import("./pages/Flashcards"));
 const DownloadPage = lazy(() => import("./pages/DownloadPage"));
 const MeetDeveloper = lazy(() => import("./pages/MeetDeveloper"));
@@ -83,10 +82,8 @@ const AppRoutes = () => {
           <Route path="/vocabularies/:id" element={<ProtectedRoute><VocabularyDetail /></ProtectedRoute>} />
           <Route path="/resources" element={<ProtectedRoute><ResourcesGallery /></ProtectedRoute>} />
           <Route path="/resources/:id" element={<ProtectedRoute><ResourceDetail /></ProtectedRoute>} />
-          <Route path="/chat/:id" element={<ProtectedRoute><WordChatPage /></ProtectedRoute>} />
           <Route path="/dictionary" element={<ProtectedRoute><OnlineDictionary /></ProtectedRoute>} />
           <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />
-          <Route path="/api-key-setup" element={<ProtectedRoute><APIKeySetup /></ProtectedRoute>} />
           <Route path="/surprise" element={<ProtectedRoute><MeetDeveloper /></ProtectedRoute>} />
 
           {/* Redirects from old grammar routes to new resources routes */}
@@ -101,7 +98,9 @@ const AppRoutes = () => {
           <Route path="/admin/analytics" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
           <Route path="/admin/tools" element={<AdminRoute><AdminTools /></AdminRoute>} />
+          <Route path="/print" element={<ProtectedRoute><PrintVocabulary /></ProtectedRoute>} />
           <Route path="/admin/duplicates" element={<AdminRoute><DuplicateManager /></AdminRoute>} />
+
 
 
 

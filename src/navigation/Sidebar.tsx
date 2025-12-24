@@ -1,4 +1,4 @@
-import { Home, BookOpen, GraduationCap, User, Activity, Globe, Shield, Users, LogOut, BarChart, Layers, Upload, Heart, Plus, Wand2, ChevronLeft, ChevronRight, LayoutDashboard, Database, Settings, Download, Search, Gift } from "lucide-react";
+import { Home, BookOpen, GraduationCap, User, Activity, Globe, Shield, Users, LogOut, BarChart, Layers, Upload, Heart, Plus, Wand2, ChevronLeft, ChevronRight, LayoutDashboard, Database, Settings, Download, Search, Gift, Printer } from "lucide-react";
 import { NavLink } from "@/navigation/NavLink";
 import { useNative } from "@/hooks/useNative";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ const mainNavItems = [
     { path: "/flashcards", icon: Layers, label: "Flashcards" },
     { path: "/dictionary", icon: Globe, label: "Dictionary" },
     { path: "/resources", icon: GraduationCap, label: "Resources" },
+    { path: "/print", icon: Printer, label: "Print Vocabulary" },
     { path: "/surprise", icon: Gift, label: "Special Gift 🎁" },
     { path: "/profile", icon: User, label: "Profile" },
     { path: "/download", icon: Download, label: "Download App" },
@@ -181,17 +182,7 @@ export const Sidebar = () => {
                         </>
                     )}
 
-                    <SectionHeader title="Preferences" />
-                    <NavLink
-                        to="/api-key-setup"
-                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-muted-foreground hover:bg-primary/5 hover:text-primary transition-all active:scale-[0.97] group ${isCollapsed ? 'justify-center h-14 w-14 mx-auto p-0' : ''
-                            }`}
-                        activeClassName="bg-primary/10 text-primary font-bold shadow-sm border border-primary/10"
-                        title={isCollapsed ? "AI API Setup" : undefined}
-                    >
-                        <Settings className="h-5 w-5 flex-shrink-0 group-hover:rotate-45 transition-transform" />
-                        {!isCollapsed && <span className="text-[13px] font-semibold">AI Assistant</span>}
-                    </NavLink>
+
                 </nav>
             </ScrollArea>
 

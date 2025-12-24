@@ -1,4 +1,5 @@
-import { Volume2, Heart, Trash2, Sparkles, Loader2, Languages, X, Share2, Search } from "lucide-react";
+// ... (I will construct the cleaner file content)
+import { Volume2, Heart, Trash2, Languages, X, Share2, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,6 @@ interface VocabCardProps {
   onClick?: () => void;
   index?: number;
   onDelete?: (id: string) => void;
-  onImproveMeaning?: (id: string) => Promise<void>;
 
   isAdmin?: boolean;
   searchQuery?: string;
@@ -48,13 +48,11 @@ export const VocabCard = memo(({
   onToggleFavorite,
   onClick,
   onDelete,
-  onImproveMeaning,
   isAdmin = false,
   searchQuery,
   style,
   className
 }: VocabCardProps) => {
-  const [isImproving, setIsImproving] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedWord, setTranslatedWord] = useState<string>("");
@@ -92,23 +90,6 @@ export const VocabCard = memo(({
         haptic('success');
         onDelete(vocab.id);
         showSuccessToast('Vocabulary deleted successfully');
-      }
-    }
-  };
-
-  const handleImprove = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    haptic('light');
-    if (onImproveMeaning) {
-      setIsImproving(true);
-      try {
-        await onImproveMeaning(vocab.id);
-        haptic('success');
-      } catch (error) {
-        haptic('error');
-        console.error("Failed to improve meaning:", error);
-      } finally {
-        setIsImproving(false);
       }
     }
   };
@@ -182,20 +163,6 @@ export const VocabCard = memo(({
                 >
                   {vocab.partOfSpeech}
                 </Badge>
-                {onImproveMeaning && !vocab.isOnline && (
-                  <button
-                    className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                    onClick={handleImprove}
-                    disabled={isImproving}
-                    title="Chat with AI"
-                  >
-                    {isImproving ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3" />
-                    )}
-                  </button>
-                )}
               </div>
 
               <h3 className={`${banglaTextSize} font-bold text-foreground leading-relaxed flex items-center gap-2 group-hover:text-primary transition-colors duration-300`}>
