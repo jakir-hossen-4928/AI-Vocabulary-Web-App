@@ -229,6 +229,8 @@ const ListeningBuilder = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [bulkConflictMode, setBulkConflictMode] = useState<'skip' | 'overwrite'>('skip');
     const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
     const ITEMS_PER_PAGE = 24;
 
     // Sanitization utility
@@ -236,20 +238,47 @@ const ListeningBuilder = () => {
         return data.map(test => ({
             ...test,
             title: test.title?.trim() || "",
-            id: test.id?.trim() || crypto.randomUUID(),
-            sections: test.sections?.map((section: any) => ({
+            id: String(test.id || "").trim() || crypto.randomUUID(),
+            audioUrl: test.audioUrl?.trim() || "",
+            sections: (test.sections || []).map((section: any) => ({
                 ...section,
                 title: section.title?.trim() || "",
                 instruction: section.instruction?.trim() || "",
-                questions: section.questions?.map((q: any) => ({
+                questions: (section.questions || []).map((q: any, qIdx: number) => ({
                     ...q,
-                    answer: q.answer?.trim() || "",
-                    beforeInput: q.beforeInput?.trim() || "",
-                    afterInput: q.afterInput?.trim() || ""
+                    id: typeof q.id === 'number' ? q.id : (parseInt(String(q.id)) || Date.now() + qIdx),
+                    number: typeof q.number === 'number' ? q.number : (parseInt(String(q.number)) || qIdx + 1),
+                    answer: String(q.answer || "").trim(),
+                    beforeInput: String(q.beforeInput || "").trim(),
+                    afterInput: String(q.afterInput || "").trim()
                 }))
             }))
         }));
     };
+
+    // Fetch tests with increased limit for 1K+ support
+    const { data: allTests = [], isLoading } = useQuery({
+        queryKey: ['ielts-admin-all'],
+        queryFn: async () => {
+            // Fetch up to 1000 tests for admin builder
+            const res = await listeningService.getTestsPaginated(null, 1000);
+            return res.tests;
+        },
+        staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    });
+
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearch]);
+
+    // Debounce search input for performance with large datasets
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     const bulkAnalysis = useMemo(() => {
         if (!isBulkUploadOpen || !bulkJson.trim()) return { valid: [], duplicates: [], errors: [] };
@@ -281,30 +310,6 @@ const ListeningBuilder = () => {
             return { valid: [], duplicates: [], errors: ["Invalid JSON format"] };
         }
     }, [bulkJson, isBulkUploadOpen, allTests]);
-
-    // Reset to page 1 when search changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [debouncedSearch]);
-
-    // Debounce search input for performance with large datasets
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearch(searchTerm);
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
-
-    // Fetch tests with increased limit for 1K+ support
-    const { data: allTests = [], isLoading } = useQuery({
-        queryKey: ['ielts-admin-all'],
-        queryFn: async () => {
-            // Fetch up to 1000 tests for admin builder
-            const res = await listeningService.getTestsPaginated(null, 1000);
-            return res.tests;
-        },
-        staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    });
 
     const filteredTests = useMemo(() => {
         let result = allTests;
@@ -436,10 +441,15 @@ const ListeningBuilder = () => {
             return toast.error("No tests to upload");
         }
 
+        setIsUploading(true);
+        setUploadProgress(0);
         try {
-            const res = await listeningService.bulkAddTests(toUpload);
+            const res = await listeningService.bulkAddTests(toUpload, (progress) => {
+                setUploadProgress(progress);
+            });
+
             if (res.errors.length > 0) {
-                toast.error(`Uploaded with ${res.errors.length} errors`);
+                toast.error(`Imported ${res.added} tests with ${res.errors.length} errors`);
             } else {
                 toast.success(`Successfully uploaded ${res.added} tests`);
                 setIsBulkUploadOpen(false);
@@ -448,6 +458,9 @@ const ListeningBuilder = () => {
             }
         } catch (e) {
             toast.error("Bulk upload failed");
+        } finally {
+            setIsUploading(false);
+            setUploadProgress(0);
         }
     };
 
@@ -1005,6 +1018,7 @@ const ListeningBuilder = () => {
                                                     variant={bulkConflictMode === 'skip' ? 'default' : 'outline'}
                                                     onClick={() => setBulkConflictMode('skip')}
                                                     className="h-8 text-[10px] px-3 font-bold"
+                                                    disabled={isUploading}
                                                 >
                                                     Skip Duplicates
                                                 </Button>
@@ -1013,6 +1027,7 @@ const ListeningBuilder = () => {
                                                     variant={bulkConflictMode === 'overwrite' ? 'destructive' : 'outline'}
                                                     onClick={() => setBulkConflictMode('overwrite')}
                                                     className="h-8 text-[10px] px-3 font-bold"
+                                                    disabled={isUploading}
                                                 >
                                                     Overwrite
                                                 </Button>
@@ -1020,29 +1035,60 @@ const ListeningBuilder = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                {isUploading && (
+                                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 space-y-3 shadow-lg shadow-blue-500/10">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs font-bold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                                                <RefreshCw className="h-3 w-3 animate-spin" /> Uploading Data...
+                                            </p>
+                                            <span className="text-xs font-black text-blue-600">{uploadProgress}%</span>
+                                        </div>
+                                        <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2 overflow-hidden border border-blue-300 dark:border-blue-800">
+                                            <div
+                                                className="bg-blue-600 h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(37,99,235,0.5)]"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-blue-600 font-medium text-center animate-pulse">
+                                            Processing batches... Please stay on this page
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
                         {/* Tip Section */}
-                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                            <p className="text-sm text-blue-900 dark:text-blue-100">
-                                💡 <strong>Pro Tip:</strong> Ensure your JSON follows the required schema. Sanitization will automatically trim extra spaces from titles and answers.
-                            </p>
-                        </div>
+                        {!isUploading && (
+                            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                                <p className="text-sm text-blue-900 dark:text-blue-100">
+                                    💡 <strong>Pro Tip:</strong> Ensure your JSON follows the required schema. Sanitization will automatically trim extra spaces from titles and answers.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer */}
                     <div className="border-t p-4 flex items-center justify-end gap-2 bg-muted/20 flex-shrink-0">
-                        <Button variant="outline" onClick={() => setIsBulkUploadOpen(false)}>
+                        <Button variant="outline" onClick={() => setIsBulkUploadOpen(false)} disabled={isUploading}>
                             Cancel
                         </Button>
                         <Button
                             onClick={handleBulkUpload}
-                            disabled={!bulkJson.trim() || bulkAnalysis.errors.length > 0 || (bulkAnalysis.valid.length === 0 && (bulkAnalysis.duplicates.length === 0 || bulkConflictMode === 'skip'))}
-                            className="gap-2 min-w-[140px]"
+                            disabled={isUploading || !bulkJson.trim() || bulkAnalysis.errors.length > 0 || (bulkAnalysis.valid.length === 0 && (bulkAnalysis.duplicates.length === 0 || bulkConflictMode === 'skip'))}
+                            className={`gap-2 min-w-[140px] transition-all duration-300 ${isUploading ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                         >
-                            <Upload className="h-4 w-4" />
-                            {bulkAnalysis.errors.length > 0 ? "Fix Errors" : `Import ${bulkAnalysis.valid.length + (bulkConflictMode === 'overwrite' ? bulkAnalysis.duplicates.length : 0)} Tests`}
+                            {isUploading ? (
+                                <>
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    Importing ({uploadProgress}%)
+                                </>
+                            ) : (
+                                <>
+                                    <Upload className="h-4 w-4" />
+                                    {bulkAnalysis.errors.length > 0 ? "Fix Errors" : `Import ${bulkAnalysis.valid.length + (bulkConflictMode === 'overwrite' ? bulkAnalysis.duplicates.length : 0)} Tests`}
+                                </>
+                            )}
                         </Button>
                     </div>
                 </DialogContent>

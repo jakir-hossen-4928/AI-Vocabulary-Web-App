@@ -67,13 +67,15 @@ export const listeningService = {
         await setDoc(doc(db, COLLECTION_NAME, test.id), test);
     },
 
-    // Bulk Add (with Batching)
-    async bulkAddTests(tests: ListeningTest[]): Promise<{ added: number; errors: string[] }> {
-        const batchSize = 450; // Firestore limit is 500
+    // Bulk Add (with Batching and Progress)
+    async bulkAddTests(
+        tests: ListeningTest[],
+        onProgress?: (progress: number) => void
+    ): Promise<{ added: number; errors: string[] }> {
+        const batchSize = 100; // Reduced batch size for more frequent progress updates
         const errors: string[] = [];
         let addedCount = 0;
 
-        // Process in chunks
         for (let i = 0; i < tests.length; i += batchSize) {
             const chunk = tests.slice(i, i + batchSize);
             const batch = writeBatch(db);
@@ -90,6 +92,11 @@ export const listeningService = {
             });
 
             await batch.commit();
+
+            if (onProgress) {
+                const currentProgress = Math.round(((i + chunk.length) / tests.length) * 100);
+                onProgress(currentProgress);
+            }
         }
 
         return { added: addedCount, errors };
