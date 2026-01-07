@@ -15,7 +15,7 @@ const ROUTE_TITLES: Record<string, string> = {
     '/home': 'Home',
     '/profile': 'My Profile',
     '/vocabularies': 'Vocabularies',
-    '/vocabularies/add': 'Add Vocabulary',
+    '/vocabularies/add': 'Create Vocabulary',
     '/vocabularies/bulk-add': 'Bulk Add Vocabularies',
     '/resources': 'Resources',
     '/dictionary': 'Online Dictionary',
@@ -28,7 +28,7 @@ const ROUTE_TITLES: Record<string, string> = {
     '/admin/ai-enhancement-studio': 'AI Enhancement Studio',
     '/admin/duplicates': 'Duplicate Manager',
     '/admin/resources': 'Admin Resources',
-    '/admin/resources/add': 'Add Resource',
+    '/admin/resources/add': 'Create Resource',
     '/ielts-listing': 'IELTS',
     '/admin/ielts-listening-builder': 'IELTS Builder',
 };

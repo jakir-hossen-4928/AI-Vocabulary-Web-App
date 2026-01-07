@@ -292,14 +292,23 @@ export default function AdminResourceGallery() {
                                             }}
                                         >
                                             {rowImages.map((img) => (
-                                                <Card key={img.id} className="group flex flex-col overflow-hidden border bg-card hover:shadow-xl transition-all duration-300 rounded-2xl h-full">
+                                                <Card key={img.id} className="group flex flex-col overflow-hidden border border-gray-200 bg-white shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl h-full">
                                                     <div className="relative aspect-video w-full overflow-hidden bg-muted cursor-pointer" onClick={() => navigate(`/admin/resources/edit/${img.id}`)}>
                                                         {img.imageUrl ? (
-                                                            <CachedImage
-                                                                src={img.thumbnailUrl || img.imageUrl}
-                                                                alt={img.title}
-                                                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                            />
+                                                            <div className="w-full h-full relative">
+                                                                <CachedImage
+                                                                    src={img.thumbnailUrl || img.imageUrl}
+                                                                    alt=""
+                                                                    className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110"
+                                                                    loading="lazy"
+                                                                />
+                                                                <CachedImage
+                                                                    src={img.imageUrl}
+                                                                    alt={img.title}
+                                                                    className="relative z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                                    loading="lazy"
+                                                                />
+                                                            </div>
                                                         ) : (
                                                             <ResourcePlaceholder title={img.title} />
                                                         )}
@@ -330,8 +339,8 @@ export default function AdminResourceGallery() {
                                                             </DropdownMenu>
                                                         </div>
                                                     </div>
-                                                    <div className="flex flex-col flex-1 p-6">
-                                                        <h3 className="font-bold text-lg leading-tight line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                                                    <div className="flex flex-col flex-1 p-5 sm:p-6">
+                                                        <h3 className="mb-2 text-xl sm:text-2xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors line-clamp-2">
                                                             {img.title}
                                                         </h3>
                                                         <div className="mt-auto pt-4 flex items-center justify-between text-muted-foreground text-xs font-medium">

@@ -12,13 +12,32 @@ interface ShareContextType {
 
 const ShareContext = createContext<ShareContextType | undefined>(undefined);
 
+// Import at component level to avoid circular dependency
+let trackEventFn: ((eventName: string, additionalData?: Record<string, any>) => void) | null = null;
+
 export const ShareProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const shareRef = useRef<HTMLDivElement>(null);
     const [sharingId, setSharingId] = useState<string | null>(null);
     const [itemToShare, setItemToShare] = useState<Vocabulary | null>(null);
 
+    // Try to get UTM tracking function
+    try {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const { trackEvent } = require('@/contexts/UTMContext').useUTM();
+        trackEventFn = trackEvent;
+    } catch {
+        // UTM context not available, tracking will be skipped
+    }
+
     const shareAsImage = useCallback(async (item: Vocabulary) => {
         if (sharingId) return;
+
+        // Track share modal open
+        trackEventFn?.('share_modal_open', {
+            vocabulary_id: item.id,
+            vocabulary_english: item.english,
+            vocabulary_bangla: item.bangla
+        });
 
         setItemToShare(item);
         setSharingId(item.id);
@@ -50,6 +69,12 @@ export const ShareProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                         title: `Vocabulary: ${item.english}`,
                         text: `Check out this word: ${item.english} (${item.bangla})`,
                     });
+
+                    // Track successful share
+                    trackEventFn?.('share_completed', {
+                        vocabulary_id: item.id,
+                        share_method: 'native_share'
+                    });
                 } else {
                     const link = document.createElement('a');
                     link.download = `vocabulary-${item.english.toLowerCase().replace(/\s+/g, '-')}.png`;
@@ -58,10 +83,22 @@ export const ShareProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     link.click();
                     document.body.removeChild(link);
                     toast.success('Sharing not supported. Image downloaded instead.');
+
+                    // Track download fallback
+                    trackEventFn?.('share_completed', {
+                        vocabulary_id: item.id,
+                        share_method: 'download'
+                    });
                 }
             } catch (error) {
                 console.error('Error sharing image:', error);
                 toast.error('Failed to generate sharing image. Please try again.');
+
+                // Track share error
+                trackEventFn?.('share_error', {
+                    vocabulary_id: item.id,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                });
             } finally {
                 setSharingId(null);
                 setItemToShare(null);

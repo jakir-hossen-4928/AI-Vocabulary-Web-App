@@ -264,18 +264,18 @@ export default function AdminAddResource() {
                                     <div className="grid md:grid-cols-2 gap-6 bg-muted/20 p-4 rounded-2xl border border-primary/5">
                                         <div className="aspect-video w-full rounded-xl overflow-hidden bg-background border-2 border-dashed border-primary/10 flex flex-col items-center justify-center relative group/img cursor-pointer transition-all hover:bg-background/80" onClick={() => document.getElementById('image-upload')?.click()}>
                                             {(file || currentThumbnailUrl || currentImageUrl) ? (
-                                                <>
+                                                <div className="w-full h-full relative">
                                                     <img
                                                         src={file ? URL.createObjectURL(file) : (currentThumbnailUrl || currentImageUrl!)}
                                                         alt=""
-                                                        className="absolute inset-0 w-full h-full object-cover blur-md opacity-30 scale-110"
+                                                        className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110"
                                                     />
                                                     <img
-                                                        src={file ? URL.createObjectURL(file) : (currentThumbnailUrl || currentImageUrl!)}
+                                                        src={file ? URL.createObjectURL(file) : (currentImageUrl || currentThumbnailUrl!)}
                                                         alt="Preview"
-                                                        className="relative z-10 w-full h-full object-contain transition-transform group-hover/img:scale-105"
+                                                        className="relative z-10 w-full h-full object-cover transition-transform group-hover/img:scale-105"
                                                     />
-                                                </>
+                                                </div>
                                             ) : (
                                                 <div className="text-center p-4">
                                                     <div className="w-12 h-12 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-3">

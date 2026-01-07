@@ -27,11 +27,11 @@ const mainNavItems = [
 
 const adminNavItems = [
     { path: "/admin/analytics", icon: LayoutDashboard, label: "Analytics" },
-    { path: "/vocabularies/add", icon: Plus, label: "Add Vocabulary" },
+    { path: "/vocabularies/add", icon: Plus, label: "Create Vocabulary" },
     { path: "/admin/users", icon: Users, label: "Manage Users" },
     { path: "/admin/ai-enhancement-studio", icon: Wand2, label: "AI Enhancement Studio" },
     { path: "/admin/resources", icon: GraduationCap, label: "Resources Manager" },
-    { path: "/admin/resources/add", icon: Plus, label: "Add Resource" },
+    { path: "/admin/resources/add", icon: Plus, label: "Create Resource" },
     { path: "/admin/duplicates", icon: Shield, label: "Duplicate Manager" },
     { path: "/vocabularies/bulk-add", icon: Upload, label: "Bulk Upload" },
     { path: "/admin/ielts-listening-builder", icon: Headphones, label: "IELTS Listening Builder" },

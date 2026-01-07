@@ -125,8 +125,10 @@ const AppRoutes = () => {
   );
 };
 
+
 import { ShareProvider } from "@/contexts/ShareContext";
 import { GlobalShareProxy } from "@/components/GlobalShareProxy";
+import { UTMProvider } from "@/contexts/UTMContext";
 
 const App = () => {
   return (
@@ -139,9 +141,11 @@ const App = () => {
             <Sonner />
             <NetworkStatus />
             <BrowserRouter>
-              <AuthProvider>
-                <AppContent />
-              </AuthProvider>
+              <UTMProvider>
+                <AuthProvider>
+                  <AppContent />
+                </AuthProvider>
+              </UTMProvider>
             </BrowserRouter>
           </FavoritesProvider>
         </ShareProvider>

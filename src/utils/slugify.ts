@@ -109,9 +109,24 @@ const translatePragmatically = (text: string): string => {
 export const slugify = (text: string): string => {
     if (!text) return '';
 
-    return translatePragmatically(text.toString())
+    const pragmaticallyTranslated = translatePragmatically(text.toString());
+
+    // If pragmatic translation worked (returned something), use it
+    if (pragmaticallyTranslated) {
+        return pragmaticallyTranslated
+            .toLowerCase()
+            .replace(/--+/g, '-')      // Replace multiple - with single -
+            .replace(/^-+/, '')        // Trim - from start of text
+            .replace(/-+$/, '');       // Trim - from end of text
+    }
+
+    // Fallback: If translation stripped everything (e.g. all unknown Bengali words),
+    // just slugify the original text directly to preserve the characters
+    return text.toString()
         .toLowerCase()
-        .replace(/--+/g, '-')      // Replace multiple - with single -
-        .replace(/^-+/, '')        // Trim - from start of text
-        .replace(/-+$/, '');       // Trim - from end of text
+        .trim()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/--+/g, '-')           // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start
+        .replace(/-+$/, '');            // Trim - from end
 };
