@@ -9,10 +9,8 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
-import remarkGfm from "remark-gfm";
 import parse from "html-react-parser";
+import { LexkitViewer } from "@/components/LexkitViewer";
 import { useResourcesSimple } from "@/hooks/useResources";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipe } from "@/hooks/useSwipe";
@@ -158,11 +156,9 @@ export default function ResourceDetail() {
 
     if (!grammar) return null;
 
-    // Check if content looks like HTML
-    const trimmedDesc = grammar.description?.trim() || '';
-    // Improved detection: starts with tag or contains common block tags at start of lines or inside
-    const isHtml = /^<[a-z]/i.test(trimmedDesc) ||
-        /<\/?(p|div|ul|ol|li|h[1-6]|br|table|section|article|header|footer|span|b|i|strong|em)\b/i.test(trimmedDesc);
+    // Check if content looks like HTML (basic heuristic)
+    const description = grammar.description || "";
+    const isHtml = description.trim().startsWith("<") && (description.includes("</") || description.includes("/>"));
 
     return (
         <div className="min-h-screen bg-background pb-20 overflow-x-hidden" {...containerProps}>
@@ -202,12 +198,12 @@ export default function ResourceDetail() {
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className="w-full"
                 >
-                    <article className="max-w-3xl mx-auto px-4 py-8 md:py-12">
+                    <article className="max-w-3xl mx-auto px-4 py-8 md:py-12 flex flex-col items-center">
                         {/* Article Header */}
                         <motion.header
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mb-8 md:mb-12 text-center space-y-6"
+                            className="mb-8 md:mb-12 text-center space-y-6 w-full"
                         >
                             <div className="space-y-4">
                                 <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight text-foreground balance-text">
@@ -235,7 +231,7 @@ export default function ResourceDetail() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.2 }}
-                                className="mb-10 md:mb-16 -mx-4 md:mx-0"
+                                className="mb-10 md:mb-16 -mx-4 md:mx-0 w-full"
                             >
                                 <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border bg-muted flex items-center justify-center">
                                     <CachedImage
@@ -262,103 +258,20 @@ export default function ResourceDetail() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.3 }}
-                                className="resource-content-container"
+                                className="resource-content-container w-full"
                             >
-                                <div className="prose prose-blue dark:prose-invert max-w-none
-                            prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight
-                            prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mb-4 prose-h2:mt-8
-                            prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mb-3 prose-h3:mt-6
-                            prose-p:leading-relaxed prose-p:text-muted-foreground/90 prose-p:mb-5
-                            prose-ul:my-6 prose-li:my-1 prose-li:text-muted-foreground/90
-                            prose-a:text-primary prose-a:font-medium prose-a:no-underline hover:prose-a:underline
-                            prose-img:rounded-2xl prose-img:shadow-xl prose-img:my-10 prose-img:border
-                            prose-blockquote:border-l-4 prose-blockquote:border-l-primary prose-blockquote:bg-primary/5 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-xl prose-blockquote:italic
-                            prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-code:text-primary prose-code:font-medium"
-                                >
-                                    {isHtml ? parse(grammar.description, {
-                                        replace: (domNode: any) => {
-                                            if (domNode.type === 'tag' && domNode.name === 'img') {
-                                                const { attribs } = domNode;
-                                                if (!attribs.loading) attribs.loading = 'lazy';
-                                                if (!attribs.decoding) attribs.decoding = 'async';
-                                                if (!attribs.style) attribs.style = '';
-                                                attribs.className = `${attribs.className || ''} rounded-2xl shadow-lg my-8 border`.trim();
-                                                return domNode;
-                                            }
-                                        }
-                                    }) : <ReactMarkdown
-                                        rehypePlugins={[rehypeRaw]}
-                                        remarkPlugins={[remarkGfm]}
-                                        components={{
-                                            img: (props) => (
-                                                <CachedImage src={props.src || ""} alt={props.alt || ""} className="rounded-2xl shadow-lg my-10 border mx-auto max-h-[500px] object-contain bg-muted/30" />
-                                            ),
-                                            h1: ({ node, ...props }) => <h1 className="text-3xl md:text-4xl font-extrabold mb-8 mt-12 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80 pb-2" {...props} />,
-                                            h2: ({ node, ...props }) => <h2 className="text-2xl md:text-3xl font-bold mb-6 mt-10 text-foreground flex items-center gap-2" {...props} />,
-                                            h3: ({ node, ...props }) => <h3 className="text-xl md:text-2xl font-semibold mb-4 mt-8 text-foreground/90 border-l-4 border-primary/20 pl-4" {...props} />,
-                                            p: ({ node, ...props }) => <p className="leading-relaxed mb-6 text-lg text-muted-foreground/90" {...props} />,
-                                            ul: ({ node, ...props }) => <ul className="list-none pl-0 mb-8 space-y-3" {...props} />,
-                                            ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-8 space-y-3 marker:text-primary marker:font-bold" {...props} />,
-                                            li: ({ node, children, ...props }) => (
-                                                <li className="flex items-start gap-3 text-muted-foreground/90 leading-relaxed" {...props}>
-                                                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
-                                                    <span>{children}</span>
-                                                </li>
-                                            ),
-                                            blockquote: ({ node, ...props }) => (
-                                                <blockquote className="border-l-4 border-primary bg-primary/5 py-6 px-8 rounded-r-xl italic my-10 text-lg relative quote-icon" {...props} />
-                                            ),
-                                            hr: ({ node, ...props }) => (
-                                                <hr className="my-10 border-none h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" {...props} />
-                                            ),
-                                            strong: ({ node, ...props }) => (
-                                                <span className="font-bold text-foreground bg-primary/5 px-1 py-0.5 rounded" {...props} />
-                                            ),
-                                            em: ({ node, ...props }) => (
-                                                <span className="italic text-primary font-medium" {...props} />
-                                            ),
-                                            table: ({ node, ...props }) => (
-                                                <div className="overflow-x-auto my-8 rounded-xl border shadow-sm">
-                                                    <table className="w-full text-left border-collapse" {...props} />
-                                                </div>
-                                            ),
-                                            thead: ({ node, ...props }) => (
-                                                <thead className="bg-muted/50 text-foreground" {...props} />
-                                            ),
-                                            tbody: ({ node, ...props }) => (
-                                                <tbody className="divide-y" {...props} />
-                                            ),
-                                            tr: ({ node, ...props }) => (
-                                                <tr className="hover:bg-muted/30 transition-colors" {...props} />
-                                            ),
-                                            th: ({ node, ...props }) => (
-                                                <th className="px-6 py-4 font-semibold text-sm uppercase tracking-wider" {...props} />
-                                            ),
-                                            td: ({ node, ...props }) => (
-                                                <td className="px-6 py-4 text-sm" {...props} />
-                                            ),
-                                            code: ({ node, className, children, ...props }: any) => {
-                                                const match = /language-(\w+)/.exec(className || '')
-                                                return !match ? (
-                                                    <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-primary font-medium" {...props}>
-                                                        {children}
-                                                    </code>
-                                                ) : (
-                                                    <pre className="bg-muted p-4 rounded-xl overflow-x-auto my-6 border shadow-inner">
-                                                        <code className={className} {...props}>
-                                                            {children}
-                                                        </code>
-                                                    </pre>
-                                                )
-                                            }
-                                        }}
-                                    >{grammar.description}</ReactMarkdown>}
-                                </div>
+                                {isHtml ? (
+                                    <div className="prose prose-blue dark:prose-invert max-w-none">
+                                        {parse(grammar.description)}
+                                    </div>
+                                ) : (
+                                    <LexkitViewer markdown={grammar.description} className="min-h-[200px]" />
+                                )}
                             </motion.div>
                         )}
 
                         {/* Footer / Divider */}
-                        <div className="mt-16 pt-8 border-t text-center text-muted-foreground">
+                        <div className="mt-16 pt-8 border-t text-center text-muted-foreground w-full">
                             <p className="text-sm">Thanks for reading! Keep practicing to master this topic.</p>
                         </div>
                     </article>

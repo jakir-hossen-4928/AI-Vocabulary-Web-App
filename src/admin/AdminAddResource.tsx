@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -14,9 +14,8 @@ import { useResourceMutations } from "@/hooks/useResources";
 import { motion } from "framer-motion";
 import { uploadImage } from "@/services/imageService";
 import { processContentImages } from "@/utils/contentImageProcessor";
-import { cleanTextContent } from "@/utils/textCleaner";
 import { slugify } from "@/utils/slugify";
-import RichTextEditor from "@/components/RichTextEditor";
+import { DefaultTemplate, DefaultTemplateRef } from "@/richtexteditor/DefaultTemplate";
 
 export default function AdminAddResource() {
     const { id } = useParams();
@@ -37,6 +36,9 @@ export default function AdminAddResource() {
     const [imageHeight, setImageHeight] = useState<number | undefined>();
     const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
     const [currentThumbnailUrl, setCurrentThumbnailUrl] = useState<string | null>(null);
+
+    // Editor ref to get content on submit
+    const editorRef = useRef<DefaultTemplateRef>(null);
 
     useEffect(() => {
         if (!user || !isAdmin) {
@@ -61,6 +63,14 @@ export default function AdminAddResource() {
                 setSlug(data.slug || "");
                 setIsSlugManuallyEdited(!!data.slug);
                 setDescription(data.description || "");
+
+                // Inject content into editor once loaded
+                if (editorRef.current && data.description) {
+                    setTimeout(() => {
+                        editorRef.current?.injectMarkdown(data.description || "");
+                    }, 100);
+                }
+
                 setCurrentImageUrl(data.imageUrl || null);
                 setCurrentThumbnailUrl(data.thumbnailUrl || null);
                 setImageWidth(data.imageWidth);
@@ -114,9 +124,19 @@ export default function AdminAddResource() {
             return;
         }
 
+        // Get current content from editor
+        let currentDescription = "";
+        if (editorRef.current) {
+            currentDescription = editorRef.current.getMarkdown();
+        }
+
+        if (!currentDescription) {
+            currentDescription = description; // Fallback
+        }
+
         setSaving(true);
         try {
-            const processedDescription = await processContentImages(description);
+            const processedDescription = await processContentImages(currentDescription);
 
             let imageUrl = currentImageUrl || "";
             let thumbnailUrl = "";
@@ -130,7 +150,7 @@ export default function AdminAddResource() {
             const docData: any = {
                 title: title.trim(),
                 slug: slug.trim() || slugify(title),
-                description: cleanTextContent(processedDescription),
+                description: processedDescription,
                 userId: user!.uid,
                 imageUrl,
                 updatedAt: new Date().toISOString(),
@@ -150,6 +170,7 @@ export default function AdminAddResource() {
             navigate("/admin/resources");
         } catch (error) {
             console.error("Error saving resource:", error);
+            toast.error("Failed to save resource");
         } finally {
             setSaving(false);
         }
@@ -297,11 +318,16 @@ export default function AdminAddResource() {
                                 <div className="space-y-3">
                                     <Label htmlFor="description" className="text-sm font-black uppercase tracking-wider opacity-70">Rich Content Builder</Label>
                                     <div className="rounded-2xl border border-primary/10 overflow-hidden bg-background">
-                                        <RichTextEditor
-                                            value={description}
-                                            onChange={setDescription}
-                                            placeholder="Start crafting your resource using Markdown or HTML..."
-                                            className="min-h-[400px]"
+                                        <DefaultTemplate
+                                            ref={editorRef}
+                                            className="min-h-[500px]"
+                                            onReady={(methods) => {
+                                                // If we had description already loaded in state before editor was ready, inject it now
+                                                if (description) {
+                                                    // Small delay to ensure initialization
+                                                    setTimeout(() => methods.injectMarkdown(description), 100);
+                                                }
+                                            }}
                                         />
                                     </div>
                                 </div>

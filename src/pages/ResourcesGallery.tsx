@@ -43,6 +43,7 @@ import { cleanTextContent, stripMarkdown } from "@/utils/textCleaner";
 import { Helmet } from "react-helmet-async";
 import { CachedImage } from "@/components/CachedImage";
 import { ResourcePlaceholder } from "@/components/ResourcePlaceholder";
+import "@/richtexteditor/styles.css";
 
 export default function ResourcesGallery() {
   const navigate = useNavigate();

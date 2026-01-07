@@ -1,45 +1,54 @@
-import { useMemo } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { DefaultTemplate, DefaultTemplateRef } from "@/richtexteditor/DefaultTemplate";
+import { useRef, useCallback, useImperativeHandle, forwardRef } from "react";
+import { cn } from "@/lib/utils";
 
 interface RichTextEditorProps {
     value: string;
-    onChange: (value: string) => void;
+    onChange?: (value: string) => void;
     placeholder?: string;
     className?: string;
 }
 
-const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEditorProps) => {
-    // Memoize modules to prevent Quill re-initialization on every render
-    const modules = useMemo(() => ({
-        toolbar: [
-            [{ header: [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-            [{ list: 'ordered' }, { list: 'bullet' }],
-            ['link', 'image'],
-            ['clean'],
-        ],
-    }), []);
+export interface RichTextEditorRef {
+    getContent: () => string;
+}
 
-    const formats = [
-        'header',
-        'bold', 'italic', 'underline', 'strike', 'blockquote',
-        'list', 'bullet',
-        'link', 'image',
-    ];
+const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
+    ({ value, onChange, placeholder, className }, ref) => {
+        const initialValueRef = useRef(value);
+        const contentRef = useRef(value);
+        const editorRef = useRef<DefaultTemplateRef | null>(null);
 
-    return (
-        <div className={`rich-text-editor ${className || ''}`}>
-            <ReactQuill
-                theme="snow"
-                value={value}
-                onChange={onChange}
-                modules={modules}
-                formats={formats}
-                placeholder={placeholder}
-            />
-        </div>
-    );
-};
+        // Initial value injection
+        const onReady = (methods: DefaultTemplateRef) => {
+            editorRef.current = methods;
+            if (initialValueRef.current) {
+                methods.injectMarkdown(initialValueRef.current);
+            }
+        };
+
+        // Store content in ref without triggering parent onChange
+        const handleContentChange = useCallback((newValue: string) => {
+            contentRef.current = newValue;
+        }, []);
+
+        // Expose method to get current content
+        useImperativeHandle(ref, () => ({
+            getContent: () => contentRef.current,
+        }));
+
+        return (
+            <div className={cn("rich-text-editor", className)}>
+                <DefaultTemplate
+                    className="min-h-[400px] border rounded-xl overflow-hidden shadow-sm"
+                    onReady={onReady}
+                    onChange={handleContentChange}
+                />
+            </div>
+        );
+    }
+);
+
+RichTextEditor.displayName = "RichTextEditor";
 
 export default RichTextEditor;

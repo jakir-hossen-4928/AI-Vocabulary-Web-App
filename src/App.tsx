@@ -150,8 +150,11 @@ const App = () => {
   );
 };
 
+import { useScrollToTop } from "@/hooks/useScrollToTop";
+
 // Separate component to use hooks that exist inside the providers (like Router)
 const AppContent = () => {
+  useScrollToTop();
   usePageTitle();
 
   useEffect(() => {
